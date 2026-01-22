@@ -1,0 +1,9 @@
+/target/
+src/main/resources/application-dev.properties
+.classpath
+/questions/
+*.bak
+# Eclipse
+.settings/
+.project
+.classpath
