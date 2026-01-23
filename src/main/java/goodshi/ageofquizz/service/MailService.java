@@ -46,13 +46,13 @@ public class MailService {
 
 		String content = """
 				<p>Bonjour,</p>
-				<p>Merci de vous être inscrit sur Duel of Legends !</p>
+				<p>Merci de vous être inscrit sur Age of Quizz !</p>
 				<p>Pour activer votre compte, veuillez cliquer sur le lien ci-dessous :</p>
 				<p><a href="%s" style="color: #1a73e8;">Vérifier mon adresse email</a></p>
 				<p>Ce lien expirera dans 24 heures.</p>
 				<br>
 				<p>Si vous n’avez pas créé de compte, vous pouvez ignorer cet email.</p>
-				<p>L’équipe Duel of Legends</p>
+				<p>L’équipe Age of Quizz</p>
 				""".formatted(verifyUrl);
 
 		sendHtmlEmail(toEmail, subject, content);
