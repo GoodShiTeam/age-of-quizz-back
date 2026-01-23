@@ -74,10 +74,10 @@ public class SecurityConfig {
 		CorsConfiguration config = new CorsConfiguration();
 		config.setAllowCredentials(true);
 		if ("dev".equals(activeProfile)) {
-			config.setAllowedOrigins(List.of("http://localhost:3000", "https://dueloflegends.com"));
+			config.setAllowedOrigins(List.of("http://localhost:3000", "https://ageofquizz.fr"));
 		} else {
 			logger.info("allow origin with profile : {} ", activeProfile);
-			config.setAllowedOrigins(List.of("https://dueloflegends.com"));
+			config.setAllowedOrigins(List.of("https://ageofquizz.fr"));
 		}
 		config.setAllowedMethods(Collections.singletonList("*"));
 		config.setAllowedHeaders(asList("Authorization", "Content-Type", "X-Requested-With"));
