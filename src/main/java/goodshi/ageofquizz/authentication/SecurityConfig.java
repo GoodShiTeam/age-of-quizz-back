@@ -77,7 +77,7 @@ public class SecurityConfig {
 			config.setAllowedOrigins(List.of("http://localhost:3000", "https://www.ageofquizz.fr"));
 		} else {
 			logger.info("allow origin with profile : {} ", activeProfile);
-			config.setAllowedOrigins(List.of("https://www.ageofquizz.fr"));
+			config.setAllowedOrigins(List.of("https://ageofquizz.fr"));
 		}
 		config.setAllowedMethods(Collections.singletonList("*"));
 		config.setAllowedHeaders(asList("Authorization", "Content-Type", "X-Requested-With"));
