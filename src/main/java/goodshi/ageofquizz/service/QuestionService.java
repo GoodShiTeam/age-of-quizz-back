@@ -25,6 +25,8 @@ public class QuestionService {
 
 		Question question = new Question(request.getTheme(), request.getLibelle(), request.getType(), author);
 		question.setFileUrl(request.getFileUrl());
+		question.setCivilisation(request.getCivilisation());
+		question.setBuilding(request.getBuilding());
 
 		for (AnswerCreateRequestDTO answerRequest : request.getAnswers()) {
 			Answer answer = new Answer(answerRequest.getValue(), answerRequest.isCorrect());

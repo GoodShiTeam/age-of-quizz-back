@@ -2,6 +2,8 @@ package goodshi.ageofquizz.dto;
 
 import java.util.List;
 
+import goodshi.ageofquizz.entity.Question.QuestionBuilding;
+import goodshi.ageofquizz.entity.Question.QuestionCivilisation;
 import goodshi.ageofquizz.entity.Question.QuestionTheme;
 import goodshi.ageofquizz.entity.Question.QuestionType;
 import jakarta.validation.constraints.NotBlank;
@@ -20,6 +22,10 @@ public class QuestionCreateRequestDTO {
 
 	@NotNull
 	private QuestionType type;
+
+	private QuestionCivilisation civilisation;
+
+	private QuestionBuilding building;
 
 	@NotEmpty
 	private List<AnswerCreateRequestDTO> answers;
@@ -62,5 +68,21 @@ public class QuestionCreateRequestDTO {
 
 	public void setFileUrl(String fileUrl) {
 		this.fileUrl = fileUrl;
+	}
+
+	public QuestionCivilisation getCivilisation() {
+		return civilisation;
+	}
+
+	public void setCivilisation(QuestionCivilisation civilisation) {
+		this.civilisation = civilisation;
+	}
+
+	public QuestionBuilding getBuilding() {
+		return building;
+	}
+
+	public void setBuilding(QuestionBuilding building) {
+		this.building = building;
 	}
 }
