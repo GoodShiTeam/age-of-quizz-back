@@ -34,7 +34,8 @@ public class UploadController {
 	@PostMapping("/upload/image")
 	@PreAuthorize("hasAnyRole('AUTHOR', 'ADMIN')")
 	public ResponseEntity<String> uploadImage(@RequestParam("file") MultipartFile file,
-			@RequestParam("path") String path, @RequestParam("width") int width, @RequestParam("height") int height,
+			@RequestParam("path") String path, @RequestParam(name = "width", required = false) int width,
+			@RequestParam(name = "height", required = false) int height,
 			@RequestParam(name = "quality", defaultValue = "0.8") float quality) {
 
 		try {

@@ -34,7 +34,9 @@ public class UploadService {
 			throw new IOException("Le fichier n'est pas une image valide.");
 		}
 
-		BufferedImage resizedImage = resizeImage(originalImage, width, height);
+		BufferedImage resizedImage = (width > 0 && height > 0) ? resizeImage(originalImage, width, height)
+				: originalImage;
+
 		File directory = ensureDirectory(path);
 		File destination = new File(directory, fileName);
 
@@ -153,8 +155,8 @@ public class UploadService {
 	}
 
 	private boolean hasImageExtension(String fileName) {
-		return fileName != null && (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") || fileName.endsWith(".png")
-				|| fileName.endsWith(".gif"));
+		return fileName != null && (fileName.endsWith(".JPG") || fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")
+				|| fileName.endsWith(".png") || fileName.endsWith(".gif"));
 	}
 
 	private String getFileExtension(String fileName) {
