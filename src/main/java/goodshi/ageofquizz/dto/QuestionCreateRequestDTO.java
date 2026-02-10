@@ -12,6 +12,8 @@ import jakarta.validation.constraints.NotNull;
 
 public class QuestionCreateRequestDTO {
 
+	private Integer id;
+
 	@NotNull
 	private QuestionTheme theme;
 
@@ -84,5 +86,13 @@ public class QuestionCreateRequestDTO {
 
 	public void setBuilding(QuestionBuilding building) {
 		this.building = building;
+	}
+
+	public Integer getId() {
+		return id;
+	}
+
+	public void setId(Integer id) {
+		this.id = id;
 	}
 }

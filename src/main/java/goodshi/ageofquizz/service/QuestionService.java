@@ -11,6 +11,7 @@ import goodshi.ageofquizz.entity.Answer;
 import goodshi.ageofquizz.entity.Question;
 import goodshi.ageofquizz.entity.Question.QuestionStatus;
 import goodshi.ageofquizz.entity.User;
+import goodshi.ageofquizz.exception.ResourceNotFoundException;
 import goodshi.ageofquizz.repository.QuestionRepository;
 import jakarta.transaction.Transactional;
 
@@ -24,6 +25,13 @@ public class QuestionService {
 	public Question createQuestion(QuestionCreateRequestDTO request, User author) {
 
 		Question question = new Question(request.getTheme(), request.getLibelle(), request.getType(), author);
+
+		Question createdQuestion = buildQuestion(question, request, author);
+
+		return questionRepository.save(createdQuestion);
+	}
+
+	private Question buildQuestion(Question question, QuestionCreateRequestDTO request, User author) {
 		question.setFileUrl(request.getFileUrl());
 		question.setCivilisation(request.getCivilisation());
 		question.setBuilding(request.getBuilding());
@@ -32,8 +40,7 @@ public class QuestionService {
 			Answer answer = new Answer(answerRequest.getValue(), answerRequest.isCorrect());
 			question.addAnswer(answer);
 		}
-
-		return questionRepository.save(question);
+		return question;
 	}
 
 	public List<Question> getAllQuestions() {
@@ -45,5 +52,20 @@ public class QuestionService {
 			question.setStatus(status);
 			return questionRepository.save(question);
 		}).orElseThrow(() -> new RuntimeException("Question id : " + id + "doesn't exist"));
+	}
+
+	public Question updateQuestion(QuestionCreateRequestDTO request, User author) {
+		Question question = questionRepository.findById(request.getId()).orElseThrow(
+				() -> new ResourceNotFoundException("Question with id : " + request.getId() + " doesn't exist"));
+
+		question.getAnswers().clear();
+
+		Question updatedQuestion = buildQuestion(question, request, author);
+		updatedQuestion.setTheme(request.getTheme());
+		updatedQuestion.setLibelle(request.getLibelle());
+		updatedQuestion.setType(request.getType());
+		updatedQuestion.setStatus(QuestionStatus.CREATED_REVIEW);
+
+		return questionRepository.save(updatedQuestion);
 	}
 }

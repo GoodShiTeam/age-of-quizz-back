@@ -2,32 +2,43 @@ package goodshi.ageofquizz.service;
 
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-import java.util.Iterator;
+import java.io.InputStream;
+import java.util.UUID;
 
-import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.stream.ImageOutputStream;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class UploadService {
 
-	public String uploadImage(MultipartFile file, String path, int width, int height, float quality)
-			throws IOException {
+	@Value("${remote.server.upload.path}")
+	private String remoteServerUploadPath;
+
+	@Value("${upload.image.path}")
+	private String uploadImagePath;
+
+	@Value("${upload.sound.path}")
+	private String uploadSoundPath;
+
+	@Autowired
+	private SftpService sftpService;
+
+	public String uploadImage(MultipartFile file, int width, int height, float quality) throws Exception {
+
 		validateFile(file);
 
-		String fileName = file.getOriginalFilename();
-		String extension = getFileExtension(fileName);
+		String extension = getFileExtension(file.getOriginalFilename());
+		String fileName = UUID.randomUUID() + "." + extension;
+
+		String logicalPath = uploadImagePath + fileName;
+		String remotePath = remoteServerUploadPath + logicalPath;
 
 		BufferedImage originalImage = ImageIO.read(file.getInputStream());
 		if (originalImage == null) {
@@ -37,22 +48,31 @@ public class UploadService {
 		BufferedImage resizedImage = (width > 0 && height > 0) ? resizeImage(originalImage, width, height)
 				: originalImage;
 
-		File directory = ensureDirectory(path);
-		File destination = new File(directory, fileName);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ImageIO.write(resizedImage, extension, baos);
 
-		saveImageWithCompression(resizedImage, destination, extension, quality);
-		return destination.getAbsolutePath();
+		try (InputStream is = new ByteArrayInputStream(baos.toByteArray())) {
+			sftpService.upload(is, remotePath);
+		}
+
+		return logicalPath;
 	}
 
-	public String uploadAudio(MultipartFile file, String path) throws IOException {
+	public String uploadAudio(MultipartFile file) throws Exception {
+
 		validateAudioFile(file);
 
-		File directory = ensureDirectory(path);
-		String fileName = file.getOriginalFilename();
-		File destination = new File(directory, fileName);
+		String extension = getFileExtension(file.getOriginalFilename());
+		String fileName = UUID.randomUUID() + "." + extension;
 
-		Files.copy(file.getInputStream(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
-		return destination.getAbsolutePath();
+		String logicalPath = uploadSoundPath + fileName;
+		String remotePath = remoteServerUploadPath + logicalPath;
+
+		try (InputStream is = file.getInputStream()) {
+			sftpService.upload(is, remotePath);
+		}
+
+		return logicalPath; // 👈 à stocker en BDD
 	}
 
 	// --------------------
@@ -106,52 +126,6 @@ public class UploadService {
 		g.drawImage(original, 0, 0, width, height, null);
 		g.dispose();
 		return resized;
-	}
-
-	private File ensureDirectory(String path) throws IOException {
-		File directory = new File(path);
-		if (!directory.exists() && !directory.mkdirs()) {
-			throw new IOException("Impossible de créer le dossier : " + path);
-		}
-		return directory;
-	}
-
-	private void saveImageWithCompression(BufferedImage image, File dest, String extension, float quality)
-			throws IOException {
-
-		if (extension.equalsIgnoreCase("jpg") || extension.equalsIgnoreCase("jpeg")) {
-			try (OutputStream os = new FileOutputStream(dest)) {
-				Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpeg");
-				if (!writers.hasNext()) {
-					throw new IllegalStateException("Aucun writer pour JPEG trouvé");
-				}
-
-				ImageWriter writer = writers.next();
-				ImageOutputStream ios = ImageIO.createImageOutputStream(os);
-				writer.setOutput(ios);
-
-				ImageWriteParam param = writer.getDefaultWriteParam();
-				if (param.canWriteCompressed()) {
-					param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-					param.setCompressionQuality(quality);
-				}
-
-				writer.write(null, new IIOImage(image, null, null), param);
-				ios.close();
-				writer.dispose();
-			}
-		} else {
-			ImageIO.write(image, extension, dest);
-		}
-	}
-
-	public String uploadImage(MultipartFile file) throws IOException {
-		String defaultPath = "uploads/screenshots";
-		int defaultWidth = 800;
-		int defaultHeight = 600;
-		float defaultQuality = 0.8f;
-
-		return uploadImage(file, defaultPath, defaultWidth, defaultHeight, defaultQuality);
 	}
 
 	private boolean hasImageExtension(String fileName) {

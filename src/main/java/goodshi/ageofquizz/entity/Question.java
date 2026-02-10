@@ -1,5 +1,6 @@
 package goodshi.ageofquizz.entity;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,6 +58,12 @@ public class Question {
 	@ManyToOne
 	@JoinColumn(name = "author", referencedColumnName = "id")
 	private User author;
+
+	@Column(name = "created_at")
+	private LocalDateTime createdAt;
+
+	@Column(name = "modified_at")
+	private LocalDateTime modifiedAt;
 
 	/*
 	 * ======================= Constructeurs =======================
@@ -193,6 +200,22 @@ public class Question {
 
 	public void setBuilding(QuestionBuilding building) {
 		this.building = building;
+	}
+
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public LocalDateTime getModifiedAt() {
+		return modifiedAt;
+	}
+
+	public void setModifiedAt(LocalDateTime modifiedAt) {
+		this.modifiedAt = modifiedAt;
 	}
 
 }

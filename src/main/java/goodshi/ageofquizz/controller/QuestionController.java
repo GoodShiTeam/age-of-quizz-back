@@ -41,6 +41,13 @@ public class QuestionController {
 		return ResponseEntity.status(HttpStatus.CREATED).body(savedQuestion.getId());
 	}
 
+	@PutMapping
+	@PreAuthorize("hasAnyRole('AUTHOR', 'ADMIN')")
+	public ResponseEntity<Integer> updateQuestion(@Valid @RequestBody QuestionCreateRequestDTO request) {
+		Question updatedQuestion = questionService.updateQuestion(request, getAuthenticatedUser());
+		return ResponseEntity.status(HttpStatus.OK).body(updatedQuestion.getId());
+	}
+
 	private User getAuthenticatedUser() {
 		UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 		User user = customUserDetailsService.findByUsername(userDetails.getUsername());

@@ -1,13 +1,9 @@
 package goodshi.ageofquizz.controller;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -20,28 +16,33 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import goodshi.ageofquizz.service.DownloadService;
 import goodshi.ageofquizz.service.UploadService;
 
 @RestController
-public class UploadController {
+public class MediaController {
 
 	@Autowired
 	private UploadService uploadService;
 
-	private static final String IMAGE_DIR = "questions/images/";
-	private static final String AUDIO_DIR = "questions/audio/";
+	@Autowired
+	private DownloadService downloadService;
+
+	private static final Logger logger = LoggerFactory.getLogger(MediaController.class);
 
 	@PostMapping("/upload/image")
 	@PreAuthorize("hasAnyRole('AUTHOR', 'ADMIN')")
 	public ResponseEntity<String> uploadImage(@RequestParam("file") MultipartFile file,
-			@RequestParam("path") String path, @RequestParam(name = "width", required = false) int width,
+			@RequestParam(name = "width", required = false) int width,
 			@RequestParam(name = "height", required = false) int height,
-			@RequestParam(name = "quality", defaultValue = "0.8") float quality) {
+			@RequestParam(name = "quality", defaultValue = "0.8") float quality) throws Exception {
 
 		try {
-			String imagePath = uploadService.uploadImage(file, path, width, height, quality);
-			return ResponseEntity.ok("Image redimensionnée et compressée avec succès : " + imagePath);
+			String imagePath = uploadService.uploadImage(file, width, height, quality);
+			return ResponseEntity.ok("Image uploadée avec succès : " + imagePath);
 		} catch (Exception e) {
+			logger.error("Erreur lors du traitement de l'image", e); // ✅ logs la stack trace complète
+
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body("Erreur lors du traitement de l'image : " + e.getMessage());
 		}
@@ -49,11 +50,10 @@ public class UploadController {
 
 	@PostMapping("/upload/audio")
 	@PreAuthorize("hasAnyRole('AUTHOR', 'ADMIN')")
-	public ResponseEntity<String> uploadAudio(@RequestParam("file") MultipartFile file,
-			@RequestParam("path") String path) {
+	public ResponseEntity<String> uploadAudio(@RequestParam("file") MultipartFile file) {
 
 		try {
-			String audioPath = uploadService.uploadAudio(file, path);
+			String audioPath = uploadService.uploadAudio(file);
 			return ResponseEntity.ok("Fichier audio uploadé avec succès : " + audioPath);
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -62,35 +62,21 @@ public class UploadController {
 	}
 
 	@GetMapping("/media/image/{filename:.+}")
-	public ResponseEntity<Resource> getImage(@PathVariable String filename) throws IOException {
-		return serveFile(IMAGE_DIR, filename);
+	public ResponseEntity<Resource> getImage(@PathVariable String filename) throws Exception {
+		Resource resource = downloadService.getImage(filename);
+		MediaType mediaType = downloadService.getMediaType(filename);
+
+		return ResponseEntity.ok().contentType(mediaType)
+				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"").body(resource);
 	}
 
 	@GetMapping("/media/audio/{filename:.+}")
-	public ResponseEntity<Resource> getAudio(@PathVariable String filename) throws IOException {
-		return serveFile(AUDIO_DIR, filename);
-	}
+	public ResponseEntity<Resource> getAudio(@PathVariable String filename) throws Exception {
+		Resource resource = downloadService.getAudio(filename);
+		MediaType mediaType = downloadService.getMediaType(filename);
 
-	private ResponseEntity<Resource> serveFile(String baseDir, String filename) throws IOException {
-
-		if (filename.contains("..")) {
-			return ResponseEntity.badRequest().build();
-		}
-
-		Path filePath = Paths.get(baseDir).resolve(filename).normalize();
-
-		if (!Files.exists(filePath)) {
-			return ResponseEntity.notFound().build();
-		}
-
-		Resource resource = new UrlResource(filePath.toUri());
-
-		String contentType = Files.probeContentType(filePath);
-		if (contentType == null) {
-			contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
-		}
-
-		return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, contentType)
+		return ResponseEntity.ok().contentType(mediaType)
 				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"").body(resource);
 	}
+
 }
