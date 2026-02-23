@@ -83,6 +83,7 @@ public class QuestionService {
 
 		Specification<Question> spec = Specification.where(QuestionSpecification.hasTheme(filter.getTheme()))
 				.and(QuestionSpecification.hasCivilisation(filter.getCivilisation()))
+				.and(QuestionSpecification.isStatus(QuestionStatus.VALIDATED))
 				.and(QuestionSpecification.hasBuilding(filter.getBuilding()));
 
 		List<Question> filteredQuestions = questionRepository.findAll(spec);
@@ -96,8 +97,8 @@ public class QuestionService {
 		if (missing > 0) {
 			List<Integer> excludedIds = result.stream().map(Question::getId).toList();
 
-			List<Question> randomQuestions = questionRepository
-					.findRandomQuestions(excludedIds.isEmpty() ? null : excludedIds, PageRequest.of(0, missing));
+			List<Question> randomQuestions = questionRepository.findRandomQuestions(QuestionStatus.VALIDATED,
+					excludedIds.isEmpty() ? null : excludedIds, PageRequest.of(0, missing));
 
 			result.addAll(randomQuestions);
 		}

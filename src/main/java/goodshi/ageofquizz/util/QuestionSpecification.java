@@ -18,4 +18,8 @@ public class QuestionSpecification {
 	public static Specification<Question> hasBuilding(Question.QuestionBuilding building) {
 		return (root, query, cb) -> building == null ? cb.conjunction() : cb.equal(root.get("building"), building);
 	}
+
+	public static Specification<Question> isStatus(Question.QuestionStatus status) {
+		return (root, query, cb) -> status == null ? cb.conjunction() : cb.equal(root.get("status"), status);
+	}
 }
