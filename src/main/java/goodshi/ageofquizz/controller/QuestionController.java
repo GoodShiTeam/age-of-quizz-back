@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import goodshi.ageofquizz.dto.FilterQuestionDTO;
 import goodshi.ageofquizz.dto.QuestionCreateRequestDTO;
 import goodshi.ageofquizz.dto.QuestionDTO;
 import goodshi.ageofquizz.entity.Question;
@@ -54,11 +55,19 @@ public class QuestionController {
 		return user;
 	}
 
-	@GetMapping
+	@GetMapping("/all")
 	@PreAuthorize("hasAnyRole('REVIEWER', 'ADMIN')")
 	public ResponseEntity<List<QuestionDTO>> getAllQuestions() {
 
-		List<QuestionDTO> dtos = questionService.getAllQuestions().stream().map(QuestionDTO::fromEntity).toList();
+		List<QuestionDTO> dtos = questionService.getAllQuestions();
+
+		return ResponseEntity.ok(dtos);
+	}
+
+	@PostMapping("/quizz")
+	public ResponseEntity<List<QuestionDTO>> getQuestions(@Valid @RequestBody FilterQuestionDTO filterQuestionDTO) {
+
+		List<QuestionDTO> dtos = questionService.getQuestions(filterQuestionDTO);
 
 		return ResponseEntity.ok(dtos);
 	}

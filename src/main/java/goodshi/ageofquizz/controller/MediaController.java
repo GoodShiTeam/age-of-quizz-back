@@ -1,8 +1,11 @@
 package goodshi.ageofquizz.controller;
 
+import java.util.Arrays;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -18,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import goodshi.ageofquizz.service.DownloadService;
 import goodshi.ageofquizz.service.UploadService;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 public class MediaController {
@@ -71,12 +75,38 @@ public class MediaController {
 	}
 
 	@GetMapping("/media/audio/{filename:.+}")
-	public ResponseEntity<Resource> getAudio(@PathVariable String filename) throws Exception {
-		Resource resource = downloadService.getAudio(filename);
+	public ResponseEntity<Resource> getAudio(@PathVariable String filename, HttpServletRequest request)
+			throws Exception {
+		ByteArrayResource resource = (ByteArrayResource) downloadService.getAudio(filename);
+		byte[] audioData = resource.getByteArray();
+		long contentLength = audioData.length;
 		MediaType mediaType = downloadService.getMediaType(filename);
 
-		return ResponseEntity.ok().contentType(mediaType)
-				.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"").body(resource);
+		// Vérifier si c'est une requête range
+		String rangeHeader = request.getHeader("Range");
+		if ((rangeHeader == null) || !rangeHeader.startsWith("bytes=")) {
+			// Retourner le fichier entier
+			return ResponseEntity.ok().contentType(mediaType).header(HttpHeaders.ACCEPT_RANGES, "bytes")
+					.header(HttpHeaders.CONTENT_LENGTH, String.valueOf(contentLength))
+					.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"").body(resource);
+		}
+		// Parser le range
+		String[] ranges = rangeHeader.substring(6).split("-");
+		long start = Long.parseLong(ranges[0]);
+		long end = ranges.length > 1 && !ranges[1].isEmpty() ? Long.parseLong(ranges[1]) : contentLength - 1;
+
+		if (start >= contentLength || end >= contentLength || start > end) {
+			return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+					.header(HttpHeaders.CONTENT_RANGE, "bytes */" + contentLength).build();
+		}
+
+		long rangeLength = end - start + 1;
+		byte[] rangeData = Arrays.copyOfRange(audioData, (int) start, (int) (end + 1));
+
+		return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).contentType(mediaType)
+				.header(HttpHeaders.ACCEPT_RANGES, "bytes")
+				.header(HttpHeaders.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + contentLength)
+				.header(HttpHeaders.CONTENT_LENGTH, String.valueOf(rangeLength)).body(new ByteArrayResource(rangeData));
 	}
 
 }

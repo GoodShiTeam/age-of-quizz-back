@@ -1,9 +1,10 @@
 package goodshi.ageofquizz.service;
 
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -34,7 +35,17 @@ public class DownloadService {
 			throw new IllegalArgumentException("Image introuvable : " + filename);
 		}
 
-		return new InputStreamResource(is);
+		// Lire en byte[] pour retourner ByteArrayResource
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		byte[] buffer = new byte[8192];
+		int bytesRead;
+		while ((bytesRead = is.read(buffer)) != -1) {
+			baos.write(buffer, 0, bytesRead);
+		}
+		byte[] data = baos.toByteArray();
+		is.close();
+
+		return new ByteArrayResource(data);
 	}
 
 	public Resource getAudio(String filename) throws Exception {
@@ -45,7 +56,17 @@ public class DownloadService {
 			throw new IllegalArgumentException("Audio introuvable : " + filename);
 		}
 
-		return new InputStreamResource(is);
+		// Lire en byte[] pour retourner ByteArrayResource
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		byte[] buffer = new byte[8192];
+		int bytesRead;
+		while ((bytesRead = is.read(buffer)) != -1) {
+			baos.write(buffer, 0, bytesRead);
+		}
+		byte[] data = baos.toByteArray();
+		is.close();
+
+		return new ByteArrayResource(data);
 	}
 
 	public MediaType getMediaType(String filename) {
