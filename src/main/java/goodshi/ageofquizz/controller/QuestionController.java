@@ -19,10 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
 import goodshi.ageofquizz.dto.FilterQuestionDTO;
 import goodshi.ageofquizz.dto.QuestionCreateRequestDTO;
 import goodshi.ageofquizz.dto.QuestionDTO;
+import goodshi.ageofquizz.dto.UserAnswerBatchRequest;
 import goodshi.ageofquizz.entity.Question;
 import goodshi.ageofquizz.entity.User;
 import goodshi.ageofquizz.service.CustomUserDetailsService;
 import goodshi.ageofquizz.service.QuestionService;
+import goodshi.ageofquizz.service.UserAnswerService;
 import jakarta.validation.Valid;
 
 @RestController
@@ -31,6 +33,9 @@ public class QuestionController {
 
 	@Autowired
 	private QuestionService questionService;
+
+	@Autowired
+	private UserAnswerService userAnswerService;
 
 	@Autowired
 	private CustomUserDetailsService customUserDetailsService;
@@ -78,6 +83,13 @@ public class QuestionController {
 			@PathVariable("status") Question.QuestionStatus status) {
 		Question updated = questionService.updateStatusQuestion(id, status);
 		return ResponseEntity.ok(QuestionDTO.fromEntity(updated));
+	}
+
+	@PostMapping("/submit-answers")
+	public ResponseEntity<Void> submitAnswers(@RequestBody @Valid UserAnswerBatchRequest request) {
+
+		userAnswerService.submitAnswers(getAuthenticatedUser().getId(), request);
+		return ResponseEntity.ok().build();
 	}
 
 }
