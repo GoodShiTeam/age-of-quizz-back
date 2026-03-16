@@ -20,6 +20,8 @@ public class QuestionCreateRequestDTO {
 	@NotBlank
 	private String libelle;
 
+	private String explication;
+
 	private String fileUrl;
 
 	@NotNull
@@ -94,5 +96,13 @@ public class QuestionCreateRequestDTO {
 
 	public void setId(Integer id) {
 		this.id = id;
+	}
+
+	public String getExplication() {
+		return explication;
+	}
+
+	public void setExplication(String explication) {
+		this.explication = explication;
 	}
 }

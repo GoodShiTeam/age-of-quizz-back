@@ -43,6 +43,7 @@ public class QuestionService {
 		question.setFileUrl(request.getFileUrl());
 		question.setCivilisation(request.getCivilisation());
 		question.setBuilding(request.getBuilding());
+		question.setExplication(request.getExplication());
 
 		for (AnswerCreateRequestDTO answerRequest : request.getAnswers()) {
 			Answer answer = new Answer(answerRequest.getValue(), answerRequest.isCorrect());

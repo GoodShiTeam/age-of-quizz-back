@@ -45,6 +45,9 @@ public class Question {
 	@Column(name = "libelle", columnDefinition = "TEXT")
 	private String libelle;
 
+	@Column(name = "explication", columnDefinition = "TEXT")
+	private String explication;
+
 	@Column(name = "file_url", columnDefinition = "TEXT")
 	private String fileUrl;
 
@@ -216,6 +219,14 @@ public class Question {
 
 	public void setModifiedAt(LocalDateTime modifiedAt) {
 		this.modifiedAt = modifiedAt;
+	}
+
+	public String getExplication() {
+		return explication;
+	}
+
+	public void setExplication(String explication) {
+		this.explication = explication;
 	}
 
 }
