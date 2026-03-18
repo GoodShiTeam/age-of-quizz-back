@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,6 +26,7 @@ import goodshi.ageofquizz.entity.User;
 import goodshi.ageofquizz.service.CustomUserDetailsService;
 import goodshi.ageofquizz.service.QuestionService;
 import goodshi.ageofquizz.service.UserAnswerService;
+import goodshi.ageofquizz.service.UserService;
 import jakarta.validation.Valid;
 
 @RestController
@@ -39,6 +41,9 @@ public class QuestionController {
 
 	@Autowired
 	private CustomUserDetailsService customUserDetailsService;
+
+	@Autowired
+	private UserService userService;
 
 	@PostMapping
 	@PreAuthorize("hasAnyRole('AUTHOR', 'ADMIN')")
@@ -55,9 +60,19 @@ public class QuestionController {
 	}
 
 	private User getAuthenticatedUser() {
-		UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-		User user = customUserDetailsService.findByUsername(userDetails.getUsername());
-		return user;
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+		if (authentication == null) {
+			return userService.getUser(0L);
+		}
+
+		Object principal = authentication.getPrincipal();
+
+		if (principal instanceof UserDetails userDetails) {
+			return customUserDetailsService.findByUsername(userDetails.getUsername());
+		}
+
+		return userService.getUser(0L);
 	}
 
 	@GetMapping("/all")
@@ -87,7 +102,6 @@ public class QuestionController {
 
 	@PostMapping("/submit-answers")
 	public ResponseEntity<Void> submitAnswers(@RequestBody @Valid UserAnswerBatchRequest request) {
-
 		userAnswerService.submitAnswers(getAuthenticatedUser().getId(), request);
 		return ResponseEntity.ok().build();
 	}

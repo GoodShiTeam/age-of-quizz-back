@@ -44,7 +44,7 @@ public class User {
 	private boolean enabled = false;
 
 	@OneToOne(cascade = CascadeType.ALL)
-	@JoinColumn(name = "user_profile_id", nullable = false, unique = true)
+	@JoinColumn(name = "user_profile_id", nullable = true, unique = true)
 	private UserProfile userProfile;
 
 	@ManyToMany(fetch = FetchType.EAGER)
@@ -114,12 +114,15 @@ public class User {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-		if (obj == null)
+		}
+		if (obj == null) {
 			return false;
-		if (getClass() != obj.getClass())
+		}
+		if (getClass() != obj.getClass()) {
 			return false;
+		}
 		User other = (User) obj;
 		return Objects.equals(email, other.email) && Objects.equals(enabled, other.enabled)
 				&& Objects.equals(id, other.id) && Objects.equals(password, other.password)

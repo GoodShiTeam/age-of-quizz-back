@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
 public class UserAnswerRequest {
@@ -12,7 +11,6 @@ public class UserAnswerRequest {
 	@NotNull
 	private Integer questionId;
 
-	@NotEmpty
 	private List<Integer> answerIds;
 
 	@NotNull

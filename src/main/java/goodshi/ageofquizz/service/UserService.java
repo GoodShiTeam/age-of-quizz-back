@@ -65,17 +65,17 @@ public class UserService {
 
 	public User findByUsername(String username) {
 		return userRepository.findByUsername(username)
-				.orElseThrow(() -> new ResourceNotFoundException("Profil utilisateur non trouvé"));
+				.orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé"));
 	}
 
 	public User getUser(Long userId) {
 		return userRepository.findById(userId)
-				.orElseThrow(() -> new ResourceNotFoundException("Profil utilisateur non trouvé"));
+				.orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé"));
 	}
 
 	public User getUserWithPseudo(String pseudo) {
 		return userRepository.findByUserProfilePseudo(pseudo)
-				.orElseThrow(() -> new ResourceNotFoundException("Profil utilisateur non trouvé"));
+				.orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé"));
 	}
 
 	public UserProfile getUserProfile(Long userProfileId) {
