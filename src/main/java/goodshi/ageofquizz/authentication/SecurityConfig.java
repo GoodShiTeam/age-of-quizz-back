@@ -61,7 +61,8 @@ public class SecurityConfig {
 				.authorizeHttpRequests(authorize -> authorize.requestMatchers(SWAGGER_UI_RESOURCES).hasRole("ADMIN")
 						.requestMatchers("/media/**").permitAll()
 						.requestMatchers("/login", "/register", "/ws/**", "/users/forgot-password",
-								"/users/reset-password", "/questions/quizz", "questions/submit-answers")
+								"/users/verify-email", "/users/reset-password", "/questions/quizz",
+								"questions/submit-answers")
 						.permitAll().anyRequest().authenticated())
 				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
