@@ -60,7 +60,7 @@ public class UserService {
 		checkIfUsernameAlreadyExists(user);
 		checkIfEmailAlreadyExists(user);
 		userRepository.save(user);
-		mailService.sendEmailVerification(user.getEmail(), generateVerificationEmailToken(secret));
+//		mailService.sendEmailVerification(user.getEmail(), generateVerificationEmailToken(secret));
 	}
 
 	public User findByUsername(String username) {
