@@ -63,7 +63,7 @@ public class QuestionController {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
 		if (authentication == null) {
-			return userService.getUser(0L);
+			return userService.getUser(-1L);
 		}
 
 		Object principal = authentication.getPrincipal();
@@ -72,7 +72,7 @@ public class QuestionController {
 			return customUserDetailsService.findByUsername(userDetails.getUsername());
 		}
 
-		return userService.getUser(0L);
+		return userService.getUser(-1L);
 	}
 
 	@GetMapping("/all")
