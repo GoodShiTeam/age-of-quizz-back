@@ -6,9 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,11 +19,9 @@ import goodshi.ageofquizz.dto.QuestionCreateRequestDTO;
 import goodshi.ageofquizz.dto.QuestionDTO;
 import goodshi.ageofquizz.dto.UserAnswerBatchRequest;
 import goodshi.ageofquizz.entity.Question;
-import goodshi.ageofquizz.entity.User;
-import goodshi.ageofquizz.service.CustomUserDetailsService;
+import goodshi.ageofquizz.service.AuthenticationFacade;
 import goodshi.ageofquizz.service.QuestionService;
 import goodshi.ageofquizz.service.UserAnswerService;
-import goodshi.ageofquizz.service.UserService;
 import jakarta.validation.Valid;
 
 @RestController
@@ -40,39 +35,30 @@ public class QuestionController {
 	private UserAnswerService userAnswerService;
 
 	@Autowired
-	private CustomUserDetailsService customUserDetailsService;
+	private AuthenticationFacade authenticationFacade;
 
-	@Autowired
-	private UserService userService;
+	// Authentication resolved via AuthenticationFacade
 
 	@PostMapping
 	@PreAuthorize("hasAnyRole('AUTHOR', 'ADMIN')")
 	public ResponseEntity<Integer> createQuestion(@Valid @RequestBody QuestionCreateRequestDTO request) {
-		Question savedQuestion = questionService.createQuestion(request, getAuthenticatedUser());
+		var user = authenticationFacade.getAuthenticatedUser();
+		if (user == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+		Question savedQuestion = questionService.createQuestion(request, user);
 		return ResponseEntity.status(HttpStatus.CREATED).body(savedQuestion.getId());
 	}
 
 	@PutMapping
 	@PreAuthorize("hasAnyRole('AUTHOR', 'ADMIN')")
 	public ResponseEntity<Integer> updateQuestion(@Valid @RequestBody QuestionCreateRequestDTO request) {
-		Question updatedQuestion = questionService.updateQuestion(request, getAuthenticatedUser());
+		var user = authenticationFacade.getAuthenticatedUser();
+		if (user == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+		Question updatedQuestion = questionService.updateQuestion(request, user);
 		return ResponseEntity.status(HttpStatus.OK).body(updatedQuestion.getId());
-	}
-
-	private User getAuthenticatedUser() {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-		if (authentication == null) {
-			return userService.getUser(-1L);
-		}
-
-		Object principal = authentication.getPrincipal();
-
-		if (principal instanceof UserDetails userDetails) {
-			return customUserDetailsService.findByUsername(userDetails.getUsername());
-		}
-
-		return userService.getUser(-1L);
 	}
 
 	@GetMapping("/all")
@@ -102,7 +88,11 @@ public class QuestionController {
 
 	@PostMapping("/submit-answers")
 	public ResponseEntity<Void> submitAnswers(@RequestBody @Valid UserAnswerBatchRequest request) {
-		userAnswerService.submitAnswers(getAuthenticatedUser().getId(), request);
+		var user = authenticationFacade.getAuthenticatedUser();
+		if (user == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+		userAnswerService.submitAnswers(user.getId(), request);
 		return ResponseEntity.ok().build();
 	}
 

@@ -8,8 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,7 +27,7 @@ import goodshi.ageofquizz.exception.ResourceNotFoundException;
 import goodshi.ageofquizz.exception.UserWithSameEmailExistException;
 import goodshi.ageofquizz.exception.UserWithSamePseudoExistException;
 import goodshi.ageofquizz.exception.UserWithSameUsernameExistException;
-import goodshi.ageofquizz.service.CustomUserDetailsService;
+import goodshi.ageofquizz.service.AuthenticationFacade;
 import goodshi.ageofquizz.service.UserService;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -40,10 +38,10 @@ import jakarta.validation.Valid;
 public class UserController {
 
 	@Autowired
-	private CustomUserDetailsService customUserDetailsService;
+	private UserService userService;
 
 	@Autowired
-	private UserService userService;
+	private AuthenticationFacade authenticationFacade;
 
 	private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
@@ -60,7 +58,11 @@ public class UserController {
 
 	@GetMapping("/current")
 	public ResponseEntity<User> getCurrentUser() {
-		return ResponseEntity.ok(getAuthenticatedUser());
+		User user = authenticationFacade.getAuthenticatedUser();
+		if (user == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+		return ResponseEntity.ok(user);
 	}
 
 	@GetMapping("")
@@ -77,7 +79,7 @@ public class UserController {
 	@PutMapping("/update-profile")
 	public ResponseEntity<UserProfile> updateProfile(@RequestBody UserProfile userProfile)
 			throws UserWithSamePseudoExistException {
-		if (!getAuthenticatedUser().getUserProfile().getId().equals(userProfile.getId())) {
+		if (!authenticationFacade.getAuthenticatedUser().getUserProfile().getId().equals(userProfile.getId())) {
 			throw new ForbiddenException("You can't update a profile of another account.");
 		}
 		return ResponseEntity.ok(userService.updateProfile(userProfile));
@@ -86,7 +88,7 @@ public class UserController {
 	@PutMapping("/update")
 	public ResponseEntity<User> updateProfile(@RequestBody User user) throws UserWithSamePseudoExistException,
 			UserWithSameUsernameExistException, UserWithSameEmailExistException {
-		if (!getAuthenticatedUser().getId().equals(user.getId())) {
+		if (!authenticationFacade.getAuthenticatedUser().getId().equals(user.getId())) {
 			throw new ForbiddenException("You can't update a user of another account.");
 		}
 		return ResponseEntity.ok(userService.update(user));
@@ -95,7 +97,7 @@ public class UserController {
 	@PutMapping("/update-password")
 	public ResponseEntity<String> updatePassword(@RequestBody PasswordChangeRequestDTO passwordChangeRequestDTO) {
 		logger.info("updating password");
-		userService.updatePassword(getAuthenticatedUser(), passwordChangeRequestDTO);
+		userService.updatePassword(authenticationFacade.getAuthenticatedUser(), passwordChangeRequestDTO);
 		return ResponseEntity.ok("Mot de passe mis à jour avec succès");
 	}
 
@@ -124,12 +126,6 @@ public class UserController {
 	public ResponseEntity<String> verifyEmail(@RequestParam("token") String token) {
 		userService.verifyEmail(token);
 		return ResponseEntity.ok("Email vérifié avec succès !");
-	}
-
-	private User getAuthenticatedUser() {
-		UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-		User user = customUserDetailsService.findByUsername(userDetails.getUsername());
-		return user;
 	}
 
 }

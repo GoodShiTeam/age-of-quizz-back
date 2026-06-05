@@ -22,4 +22,11 @@ public interface QuestionRepository extends JpaRepository<Question, Integer>, Jp
 	List<Question> findRandomQuestions(@Param("status") QuestionStatus status,
 			@Param("excludedIds") List<Integer> excludedIds, Pageable pageable);
 
+	@Query("""
+			    SELECT DISTINCT q FROM Question q
+			    LEFT JOIN FETCH q.answers
+			    WHERE q.id IN :ids
+			""")
+	List<Question> findByIdsWithAnswers(@Param("ids") List<Integer> ids);
+
 }
