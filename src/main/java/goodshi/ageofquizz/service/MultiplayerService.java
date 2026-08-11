@@ -176,21 +176,30 @@ public class MultiplayerService {
 		return room;
 	}
 
-	public Room joinRoom(String code, User user, String participantId, String displayName) {
+	public CreateRoomResult joinRoom(String code, User user, String participantId, String displayName) {
 		Room room = getRoomOrThrow(code);
 		if (user != null) {
 			room.addPlayer(user);
-			return room;
+			notifyPlayerJoined(room, user.getUsername());
+			return new CreateRoomResult(room, null);
 		}
-		if (participantId == null) {
-			throw new IllegalArgumentException("Unauthenticated user must provide participantId to join");
+		if (participantId == null || participantId.trim().isEmpty()) {
+			participantId = "anon_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
 		}
 		// create transient anonymous user for display purposes
 		User anon = new User();
 		anon.setId(-1L);
 		anon.setUsername(displayName == null || displayName.trim().isEmpty() ? participantId : displayName.trim());
 		room.addPlayer(anon, participantId);
-		return room;
+		notifyPlayerJoined(room, anon.getUsername());
+		return new CreateRoomResult(room, participantId);
+	}
+
+	private void notifyPlayerJoined(Room room, String username) {
+		Map<String, Object> payload = new HashMap<>();
+		payload.put("username", username);
+		payload.put("players", room.getPlayers().stream().map(User::getUsername).collect(Collectors.toList()));
+		eventService.sendToRoom(room.getCode(), new GameEvent("PLAYER_JOINED", payload));
 	}
 
 	public Room startGame(String code, List<Question> questions) {

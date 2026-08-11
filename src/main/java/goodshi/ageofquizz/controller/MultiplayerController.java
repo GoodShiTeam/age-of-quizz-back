@@ -51,10 +51,13 @@ public class MultiplayerController {
 	public ResponseEntity<?> joinRoom(@RequestBody JoinRoomRequest req) {
 		User user = authenticationFacade.getAuthenticatedUser();
 		try {
-			var room = multiplayerService.joinRoom(req.getCode(), user, req.getParticipantId(), req.getDisplayName());
+			CreateRoomResult result = multiplayerService.joinRoom(req.getCode(), user, req.getParticipantId(),
+					req.getDisplayName());
+			Room room = result.getRoom();
 			Map<String, Object> resp = new HashMap<>();
 			resp.put("code", room.getCode());
 			resp.put("players", room.getPlayers().stream().map(u -> u.getUsername()).collect(Collectors.toList()));
+			resp.put("participantId", result.getParticipantId());
 			return ResponseEntity.ok(resp);
 		} catch (IllegalArgumentException e) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));

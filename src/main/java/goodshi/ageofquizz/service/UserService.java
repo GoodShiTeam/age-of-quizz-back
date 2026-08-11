@@ -189,14 +189,6 @@ public class UserService {
 		userRepository.save(user);
 	}
 
-	private String generateVerificationEmailToken(String email) {
-		Date now = new Date();
-		Date expiry = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-
-		return Jwts.builder().setSubject(email).claim("type", "email_verification").setIssuedAt(now)
-				.setExpiration(expiry).signWith(SignatureAlgorithm.HS256, secret).compact();
-	}
-
 	public void verifyEmail(String token) {
 		try {
 			Claims claims = Jwts.parser().setSigningKey(secret).parseClaimsJws(token).getBody();

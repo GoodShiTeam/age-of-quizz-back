@@ -62,7 +62,7 @@ public class SecurityConfig {
 						.requestMatchers("/media/**").permitAll()
 						.requestMatchers("/login", "/register", "/ws/**", "/users/forgot-password",
 								"/users/verify-email", "/users/reset-password", "/questions/quizz",
-								"questions/submit-answers")
+								"questions/submit-answers", "/multiplayer/**")
 						.permitAll().anyRequest().authenticated())
 				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
