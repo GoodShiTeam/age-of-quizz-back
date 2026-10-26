@@ -224,7 +224,7 @@ public class MultiplayerService {
 		eventService.sendToRoom(code, new GameEvent("GAME_STARTED", null));
 
 		NewQuestionPayload payload = new NewQuestionPayload(room.getCurrentQuestion(), room.getQuestionStartTime(),
-				room.getQuestionEndTime());
+				room.getQuestionEndTime(), room.getCurrentQuestionIndex(), room.getQuestions().size());
 		eventService.sendToRoom(code, new GameEvent("NEW_QUESTION", payload));
 
 		return room;

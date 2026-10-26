@@ -220,7 +220,8 @@ public class GameService {
 					room.setQuestionActive(true);
 
 					NewQuestionPayload nextPayload = new NewQuestionPayload(room.getCurrentQuestion(),
-							room.getQuestionStartTime(), room.getQuestionEndTime());
+							room.getQuestionStartTime(), room.getQuestionEndTime(), room.getCurrentQuestionIndex(),
+							room.getQuestions().size());
 					eventService.sendToRoom(code, new GameEvent("NEW_QUESTION", nextPayload));
 				}
 			}
