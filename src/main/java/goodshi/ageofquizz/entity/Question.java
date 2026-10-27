@@ -89,7 +89,7 @@ public class Question {
 	 */
 
 	public enum QuestionTheme {
-		TECH_TREE, IMAGE, UNIT_STATS, SOUND
+		TECH_TREE, IMAGE, UNIT_STATS, SOUND, CULTURE
 	}
 
 	public enum QuestionType {

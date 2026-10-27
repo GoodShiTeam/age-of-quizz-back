@@ -36,9 +36,10 @@ CREATE TABLE IF NOT EXISTS daily_riddle_schedule (
 
 -- Parties des utilisateurs connectés (entité DailyRiddleResult), une par jour.
 -- guesses : propositions séparées par des retours à la ligne.
+-- user_id en INT : user.id est un INT(11) en base (pas BIGINT).
 CREATE TABLE IF NOT EXISTS daily_riddle_result (
     id BIGINT NOT NULL AUTO_INCREMENT,
-    user_id BIGINT NOT NULL,
+    user_id INT NOT NULL,
     riddle_date DATE NOT NULL,
     guesses VARCHAR(2000) NOT NULL DEFAULT '',
     status VARCHAR(10) NOT NULL,

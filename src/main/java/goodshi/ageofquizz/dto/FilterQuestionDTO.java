@@ -1,5 +1,7 @@
 package goodshi.ageofquizz.dto;
 
+import java.util.List;
+
 import goodshi.ageofquizz.entity.Question.QuestionBuilding;
 import goodshi.ageofquizz.entity.Question.QuestionCivilisation;
 import goodshi.ageofquizz.entity.Question.QuestionTheme;
@@ -9,6 +11,8 @@ public class FilterQuestionDTO {
 	private QuestionBuilding building;
 	private QuestionCivilisation civilisation;
 	private QuestionTheme theme;
+	/** Thèmes à écarter, y compris des questions aléatoires de complément. */
+	private List<QuestionTheme> excludedThemes;
 	private int numberOfQuestions;
 
 	public QuestionBuilding getBuilding() {
@@ -33,6 +37,14 @@ public class FilterQuestionDTO {
 
 	public void setTheme(QuestionTheme theme) {
 		this.theme = theme;
+	}
+
+	public List<QuestionTheme> getExcludedThemes() {
+		return excludedThemes;
+	}
+
+	public void setExcludedThemes(List<QuestionTheme> excludedThemes) {
+		this.excludedThemes = excludedThemes;
 	}
 
 	public int getNumberOfQuestions() {

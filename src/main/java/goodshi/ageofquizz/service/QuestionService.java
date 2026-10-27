@@ -16,6 +16,7 @@ import goodshi.ageofquizz.dto.QuestionDTO;
 import goodshi.ageofquizz.entity.Answer;
 import goodshi.ageofquizz.entity.Question;
 import goodshi.ageofquizz.entity.Question.QuestionStatus;
+import goodshi.ageofquizz.entity.Question.QuestionTheme;
 import goodshi.ageofquizz.entity.User;
 import goodshi.ageofquizz.exception.ResourceNotFoundException;
 import goodshi.ageofquizz.repository.QuestionRepository;
@@ -81,8 +82,11 @@ public class QuestionService {
 	public List<QuestionDTO> getQuestions(@Valid FilterQuestionDTO filter) {
 
 		int wanted = filter.getNumberOfQuestions();
+		List<QuestionTheme> excludedThemes = filter.getExcludedThemes() == null
+				|| filter.getExcludedThemes().isEmpty() ? null : filter.getExcludedThemes();
 
 		Specification<Question> spec = Specification.where(QuestionSpecification.hasTheme(filter.getTheme()))
+				.and(QuestionSpecification.hasNoneOfThemes(excludedThemes))
 				.and(QuestionSpecification.hasCivilisation(filter.getCivilisation()))
 				.and(QuestionSpecification.isStatus(QuestionStatus.VALIDATED))
 				.and(QuestionSpecification.hasBuilding(filter.getBuilding()));
@@ -98,10 +102,19 @@ public class QuestionService {
 		if (missing > 0) {
 			List<Integer> excludedIds = result.stream().map(Question::getId).toList();
 
-			List<Question> randomQuestions = questionRepository.findRandomQuestions(QuestionStatus.VALIDATED,
-					excludedIds.isEmpty() ? null : excludedIds, PageRequest.of(0, missing));
-
-			result.addAll(randomQuestions);
+			if (excludedThemes == null) {
+				List<Question> randomQuestions = questionRepository.findRandomQuestions(QuestionStatus.VALIDATED,
+						excludedIds.isEmpty() ? null : excludedIds, PageRequest.of(0, missing));
+				result.addAll(randomQuestions);
+			} else {
+				// Le complément aléatoire respecte aussi les thèmes écartés.
+				List<Question> pool = questionRepository.findAll(Specification
+						.where(QuestionSpecification.isStatus(QuestionStatus.VALIDATED))
+						.and(QuestionSpecification.hasNoneOfThemes(excludedThemes)));
+				pool.removeIf(q -> excludedIds.contains(q.getId()));
+				Collections.shuffle(pool);
+				result.addAll(pool.stream().limit(missing).toList());
+			}
 		}
 
 		return result.stream().map(QuestionDTO::fromEntity).toList();
