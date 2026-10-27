@@ -29,4 +29,15 @@ public interface QuestionRepository extends JpaRepository<Question, Integer>, Jp
 			""")
 	List<Question> findByIdsWithAnswers(@Param("ids") List<Integer> ids);
 
+	/**
+	 * Toutes les questions avec réponses et auteur en une requête (au lieu d'une
+	 * requête par question pour charger ses réponses).
+	 */
+	@Query("""
+			    SELECT DISTINCT q FROM Question q
+			    LEFT JOIN FETCH q.answers
+			    LEFT JOIN FETCH q.author
+			""")
+	List<Question> findAllWithAnswersAndAuthor();
+
 }

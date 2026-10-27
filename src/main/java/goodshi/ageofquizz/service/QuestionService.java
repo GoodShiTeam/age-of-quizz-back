@@ -53,8 +53,9 @@ public class QuestionService {
 		return question;
 	}
 
+	@Transactional
 	public List<QuestionDTO> getAllQuestions() {
-		return questionRepository.findAll().stream().map(QuestionDTO::fromEntity).toList();
+		return questionRepository.findAllWithAnswersAndAuthor().stream().map(QuestionDTO::fromEntity).toList();
 	}
 
 	public Question updateStatusQuestion(Integer id, QuestionStatus status) {

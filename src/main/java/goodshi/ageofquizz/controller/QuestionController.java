@@ -52,13 +52,14 @@ public class QuestionController {
 
 	@PutMapping
 	@PreAuthorize("hasAnyRole('AUTHOR', 'ADMIN')")
-	public ResponseEntity<Integer> updateQuestion(@Valid @RequestBody QuestionCreateRequestDTO request) {
+	public ResponseEntity<QuestionDTO> updateQuestion(@Valid @RequestBody QuestionCreateRequestDTO request) {
 		var user = authenticationFacade.getAuthenticatedUser();
 		if (user == null) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 		}
 		Question updatedQuestion = questionService.updateQuestion(request, user);
-		return ResponseEntity.status(HttpStatus.OK).body(updatedQuestion.getId());
+		// La question complète permet au front de mettre sa liste à jour sans tout recharger.
+		return ResponseEntity.status(HttpStatus.OK).body(QuestionDTO.fromEntity(updatedQuestion));
 	}
 
 	@GetMapping("/all")
