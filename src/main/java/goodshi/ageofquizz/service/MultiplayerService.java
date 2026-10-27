@@ -130,8 +130,9 @@ public class MultiplayerService {
 		}
 		room.setParticipantReady(participantKey, ready);
 
-		// Build a lightweight payload: participantKey, username, ready
-		Map<String, Object> payload = new HashMap<>();
+		// Full lobby snapshot so every client can refresh its player list, plus the
+		// participant that just changed state
+		Map<String, Object> payload = buildLobbyPayload(room);
 		payload.put("participantKey", participantKey);
 		User p = room.getParticipantsByKey().get(participantKey);
 		payload.put("username", p == null ? null : p.getUsername());
@@ -141,15 +142,41 @@ public class MultiplayerService {
 	}
 
 	/**
+	 * Lobby snapshot shared by PLAYER_JOINED / PLAYER_READY events and the room
+	 * state endpoint: one entry per participant (with readiness) and the host.
+	 */
+	private Map<String, Object> buildLobbyPayload(Room room) {
+		String hostKey = room.getParticipantKeyForHost();
+		List<Map<String, Object>> players = room.getParticipantsByKey().entrySet().stream().map(e -> {
+			Map<String, Object> player = new HashMap<>();
+			User u = e.getValue();
+			player.put("participantKey", e.getKey());
+			player.put("userId", u == null || u.getId() == null ? -1L : u.getId());
+			player.put("username", u == null ? e.getKey() : u.getUsername());
+			player.put("ready", room.isParticipantReady(e.getKey()));
+			player.put("host", e.getKey().equals(hostKey));
+			return player;
+		}).collect(Collectors.toList());
+
+		Map<String, Object> host = new HashMap<>();
+		host.put("participantKey", hostKey);
+		host.put("userId", room.getHost().getId());
+
+		Map<String, Object> payload = new HashMap<>();
+		payload.put("players", players);
+		payload.put("host", host);
+		payload.put("status", room.getStatus());
+		return payload;
+	}
+
+	/**
 	 * Build a simple state map representing the room. Controller can return this
 	 * directly.
 	 */
 	public Map<String, Object> getRoomStateMap(String code) {
 		Room room = getRoomOrThrow(code);
-		Map<String, Object> state = new HashMap<>();
+		Map<String, Object> state = buildLobbyPayload(room);
 		state.put("code", room.getCode());
-		state.put("status", room.getStatus());
-		state.put("players", room.getPlayers().stream().map(u -> u.getUsername()).collect(Collectors.toList()));
 		state.put("scores", room.getScores());
 		state.put("currentQuestionIndex", room.getCurrentQuestionIndex());
 		state.put("questionActive", room.isQuestionActive());
@@ -196,9 +223,8 @@ public class MultiplayerService {
 	}
 
 	private void notifyPlayerJoined(Room room, String username) {
-		Map<String, Object> payload = new HashMap<>();
+		Map<String, Object> payload = buildLobbyPayload(room);
 		payload.put("username", username);
-		payload.put("players", room.getPlayers().stream().map(User::getUsername).collect(Collectors.toList()));
 		eventService.sendToRoom(room.getCode(), new GameEvent("PLAYER_JOINED", payload));
 	}
 
