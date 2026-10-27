@@ -9,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -16,6 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import goodshi.ageofquizz.controller.AuthController;
 import goodshi.ageofquizz.service.CustomUserDetailsService;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -65,8 +67,18 @@ public class JwtFilter extends OncePerRequestFilter {
 			return;
 		}
 
-		final String token = header.split(" ")[1].trim();
-		UserDetails userDetails = customUserDetailsService.loadUserByUsername(jwtUtil.extractUsername(token));
+		final String token = header.substring("Bearer ".length()).trim();
+		UserDetails userDetails;
+		try {
+			userDetails = customUserDetailsService.loadUserByUsername(jwtUtil.extractUsername(token));
+		} catch (JwtException | IllegalArgumentException | UsernameNotFoundException e) {
+			// Jeton expiré, mal formé ou utilisateur supprimé : la requête continue en
+			// anonyme. Les routes publiques répondent normalement, les autres refusent
+			// l'accès via Spring Security.
+			logger.debug("JWT ignoré : {}", e.getMessage());
+			filterChain.doFilter(request, response);
+			return;
+		}
 
 		if (!jwtUtil.validateToken(token, userDetails)) {
 			filterChain.doFilter(request, response);
