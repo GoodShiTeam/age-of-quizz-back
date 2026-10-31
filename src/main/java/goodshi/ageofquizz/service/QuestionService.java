@@ -1,11 +1,17 @@
 package goodshi.ageofquizz.service;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
@@ -85,8 +91,10 @@ public class QuestionService {
 	}
 
 	/**
-	 * Tire au hasard les questions validées correspondant au filtre, complétées
-	 * par des questions aléatoires s'il n'y en a pas assez.
+	 * Tire les questions validées correspondant au filtre, complétées par
+	 * d'autres questions s'il n'y en a pas assez. Le tirage est équilibré entre
+	 * les styles de questions (voir {@link #balancedDraw}) plutôt que
+	 * proportionnel au contenu de la base.
 	 */
 	public List<Question> selectQuestions(FilterQuestionDTO filter) {
 
@@ -100,32 +108,75 @@ public class QuestionService {
 				.and(QuestionSpecification.isStatus(QuestionStatus.VALIDATED))
 				.and(QuestionSpecification.hasBuilding(filter.getBuilding()));
 
-		List<Question> filteredQuestions = questionRepository.findAll(spec);
-
-		Collections.shuffle(filteredQuestions);
-
-		List<Question> result = new ArrayList<>(filteredQuestions.stream().limit(wanted).toList());
+		List<Question> result = new ArrayList<>(balancedDraw(questionRepository.findAll(spec), wanted));
 
 		int missing = wanted - result.size();
-
 		if (missing > 0) {
-			List<Integer> excludedIds = result.stream().map(Question::getId).toList();
-
-			if (excludedThemes == null) {
-				List<Question> randomQuestions = questionRepository.findRandomQuestions(QuestionStatus.VALIDATED,
-						excludedIds.isEmpty() ? null : excludedIds, PageRequest.of(0, missing));
-				result.addAll(randomQuestions);
-			} else {
-				// Le complément aléatoire respecte aussi les thèmes écartés.
-				List<Question> pool = questionRepository.findAll(Specification
-						.where(QuestionSpecification.isStatus(QuestionStatus.VALIDATED))
-						.and(QuestionSpecification.hasNoneOfThemes(excludedThemes)));
-				pool.removeIf(q -> excludedIds.contains(q.getId()));
-				Collections.shuffle(pool);
-				result.addAll(pool.stream().limit(missing).toList());
-			}
+			// Le complément respecte aussi les thèmes écartés.
+			Set<Integer> takenIds = result.stream().map(Question::getId).collect(Collectors.toSet());
+			List<Question> pool = questionRepository.findAll(Specification
+					.where(QuestionSpecification.isStatus(QuestionStatus.VALIDATED))
+					.and(QuestionSpecification.hasNoneOfThemes(excludedThemes)));
+			pool.removeIf(q -> takenIds.contains(q.getId()));
+			result.addAll(balancedDraw(pool, missing));
 		}
 
+		Collections.shuffle(result);
 		return result;
+	}
+
+	/**
+	 * Tire jusqu'à {@code count} questions en équilibrant les thèmes (arbre des
+	 * technologies, image, son...) : chaque thème donne une question à tour de
+	 * rôle, puis, dans un thème, les types (QCM, vrai/faux...) alternent. Un
+	 * style épuisé laisse sa place aux autres. Sans ça, un thème très fourni en
+	 * base remplirait presque toute la partie.
+	 */
+	static List<Question> balancedDraw(List<Question> pool, int count) {
+		// Les questions sans thème forment leur propre groupe ("")
+		Map<String, List<Question>> byTheme = pool.stream()
+				.collect(Collectors.groupingBy(q -> Optional.ofNullable(q.getTheme()).map(Enum::name).orElse("")));
+		List<Deque<Question>> themes = byTheme.values().stream()
+				.map(questions -> (Deque<Question>) new ArrayDeque<>(interleaveTypes(questions)))
+				.collect(Collectors.toCollection(ArrayList::new));
+		// Ordre des thèmes tiré au hasard : avec peu de questions demandées, ce ne
+		// sont pas toujours les mêmes thèmes qui passent en premier
+		Collections.shuffle(themes);
+
+		List<Question> drawn = new ArrayList<>();
+		while (drawn.size() < count && !themes.isEmpty()) {
+			for (Iterator<Deque<Question>> it = themes.iterator(); it.hasNext() && drawn.size() < count;) {
+				Deque<Question> theme = it.next();
+				drawn.add(theme.poll());
+				if (theme.isEmpty()) {
+					it.remove();
+				}
+			}
+		}
+		return drawn;
+	}
+
+	/** Questions d'un thème, mélangées, en alternant les types. */
+	private static List<Question> interleaveTypes(List<Question> questions) {
+		List<Deque<Question>> types = questions.stream()
+				.collect(Collectors.groupingBy(q -> Optional.ofNullable(q.getType()).map(Enum::name).orElse("")))
+				.values().stream().map(list -> {
+					List<Question> shuffled = new ArrayList<>(list);
+					Collections.shuffle(shuffled);
+					return (Deque<Question>) new ArrayDeque<>(shuffled);
+				}).collect(Collectors.toCollection(ArrayList::new));
+		Collections.shuffle(types);
+
+		List<Question> interleaved = new ArrayList<>();
+		while (!types.isEmpty()) {
+			for (Iterator<Deque<Question>> it = types.iterator(); it.hasNext();) {
+				Deque<Question> type = it.next();
+				interleaved.add(type.poll());
+				if (type.isEmpty()) {
+					it.remove();
+				}
+			}
+		}
+		return interleaved;
 	}
 }
