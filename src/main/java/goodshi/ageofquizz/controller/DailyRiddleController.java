@@ -73,19 +73,19 @@ public class DailyRiddleController {
 	}
 
 	@GetMapping("/admin/entries")
-	@PreAuthorize("hasAnyRole('REVIEWER', 'ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<List<DailyRiddleEntryDTO>> listEntries() {
 		return ResponseEntity.ok(dailyRiddleAdminService.listEntries());
 	}
 
 	@PostMapping("/admin/entries")
-	@PreAuthorize("hasAnyRole('REVIEWER', 'ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<DailyRiddleEntryDTO> createEntry(@RequestBody DailyRiddleEntryRequestDTO request) {
 		return ResponseEntity.status(HttpStatus.CREATED).body(dailyRiddleAdminService.createEntry(request));
 	}
 
 	@PutMapping("/admin/entries/{id}")
-	@PreAuthorize("hasAnyRole('REVIEWER', 'ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<DailyRiddleEntryDTO> updateEntry(@PathVariable int id,
 			@RequestBody DailyRiddleEntryRequestDTO request) {
 		return ResponseEntity.ok(dailyRiddleAdminService.updateEntry(id, request));
@@ -96,7 +96,7 @@ public class DailyRiddleController {
 	 * {@code strings} = data/locales/fr/strings.json.
 	 */
 	@PostMapping("/admin/import")
-	@PreAuthorize("hasAnyRole('REVIEWER', 'ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<DailyRiddleImportResultDTO> importTechTree(@RequestParam("data") MultipartFile data,
 			@RequestParam("strings") MultipartFile strings,
 			@RequestParam(name = "keepManualEdits", defaultValue = "true") boolean keepManualEdits)

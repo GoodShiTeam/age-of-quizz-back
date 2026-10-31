@@ -13,10 +13,20 @@ public class PlayerResult {
     private long totalTimeSeconds;
     private double averageTimePerQuestion;
     private String avatar;
+    /** Null for guests: link to the player's public profile. */
+    private Long userProfileId;
 
     public PlayerResult() {}
 
     // getters/setters
+
+    public Long getUserProfileId() {
+        return userProfileId;
+    }
+
+    public void setUserProfileId(Long userProfileId) {
+        this.userProfileId = userProfileId;
+    }
 
     public Long getUserId() {
         return userId;

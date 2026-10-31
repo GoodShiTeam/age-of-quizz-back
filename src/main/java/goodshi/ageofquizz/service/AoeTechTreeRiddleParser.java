@@ -28,6 +28,10 @@ import goodshi.ageofquizz.model.DailyRiddleData.Hint;
  * par civilisation et par unité (hors versions élite et héros), avec 6
  * indices du plus vague au plus précis. Le nom de la réponse est masqué
  * ("???") dans les indices.
+ *
+ * La difficulté doit monter progressivement : les indices qui suffisent
+ * presque seuls à trouver la réponse (bonus d'équipe, coût exact, unité
+ * unique...) viennent en dernier, les premiers ne font que réduire le champ.
  */
 @Component
 public class AoeTechTreeRiddleParser {
@@ -35,8 +39,20 @@ public class AoeTechTreeRiddleParser {
 	private static final Set<String> HERO_INTERNAL_NAMES = Set.of("CAOCAO", "LIUBEI", "SUNJIAN");
 	private static final Map<String, String> RESOURCES = Map.of("Food", "nourriture", "Wood", "bois", "Gold", "or",
 			"Stone", "pierre");
+	private static final Map<String, String> RESOURCES_PARTITIVE = Map.of("Food", "de la nourriture", "Wood",
+			"du bois", "Gold", "de l'or", "Stone", "de la pierre");
 	/** Les textes d'aide des unités sont décalés de 21000 par rapport à leur nom. */
 	private static final int UNIT_HELP_OFFSET = 21000;
+	/** Décalage entre LanguageNameId et le nom affiché, pour les unités et les technologies. */
+	private static final int UNIT_NAME_OFFSET = 9000;
+	private static final int TECH_NAME_OFFSET = 10000;
+	/**
+	 * Une unité ou technologie est "courante" si au moins cette part des civs y a
+	 * accès : son absence est alors un indice parlant.
+	 */
+	private static final double COMMON_SHARE = 0.75;
+	/** Au-delà, la liste des civs d'une unité est trop longue : on donne ses améliorations. */
+	private static final int MAX_CIVS_LISTED = 8;
 
 	private static final Pattern BLOCK_SEPARATOR = Pattern.compile("<br>\\s*\\n?\\s*<br>",
 			Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CHARACTER_CLASS);
@@ -45,6 +61,19 @@ public class AoeTechTreeRiddleParser {
 	private static final Pattern UNIQUE_TECHS = Pattern.compile("^(Technologies|Techniques) uniques", flags());
 	private static final Pattern TEAM_BONUS = Pattern.compile("^Bonus d'équipe", flags());
 	private static final Pattern SEVERAL_UNIQUE_UNITS = Pattern.compile("<b>Unités uniques", flags());
+	/**
+	 * Adjectifs de civilisation ("Archer monté mongol unique") : retirés des
+	 * descriptions d'unités, sinon l'indice "Points forts et faibles" donnerait la
+	 * civ (et donc l'unité unique) bien avant le dernier indice.
+	 */
+	private static final Pattern DEMONYMS = Pattern.compile("\\s+(?:arm[ée]nien(?:ne)?|azt[èe]que|berb[èe]re"
+			+ "|birmane?|boh[ée]mien(?:ne)?|bourguignon(?:ne)?|britannique|bulgare|byzantine?|celte|chinoise?"
+			+ "|cor[ée]en(?:ne)?|coumane?|danoise?|dravidien(?:ne)?|espagnole?|franque?|gothique|gurjara"
+			+ "|g[ée]orgien(?:ne)?|hindoustanie?|hongroise?|hunnique|inca|italien(?:ne)?|japonaise?|j[üu]rchen"
+			+ "|khitane?|khm[èe]re?|lituanien(?:ne)?|malaise?|malien(?:ne)?|mapuche|maya|mongole?|muisca|perse"
+			+ "|polonaise?|portugaise?|romaine?|sarrasine?|saxon(?:ne)?|sicilien(?:ne)?|slave|tatare?|teutonique"
+			+ "|tupi|turque?|turc|var[èe]gue|vietnamien(?:ne)?|viking|[ée]thiopien(?:ne)?|bengalie?|shu|wei|wu)s?"
+			+ "(?!\\p{L})", flags());
 
 	private record CivHelp(String type, List<String> bonuses, List<String> uniqueUnits, List<String> uniqueTechs,
 			List<String> teamBonus, boolean hasSeveralUniqueUnits) {
@@ -64,6 +93,9 @@ public class AoeTechTreeRiddleParser {
 	// ---------- Civilisations ----------
 
 	private List<Entry> buildCivilizations(JsonNode data, JsonNode strings) {
+		List<String> commonUnits = commonIds(data, "Unit");
+		List<String> commonTechs = commonIds(data, "Tech");
+
 		List<Entry> entries = new ArrayList<>();
 		for (JsonNode civ : iterable(data.get("civs").elements())) {
 			String name = text(strings, civ.path("name_string_id").asText());
@@ -72,12 +104,14 @@ public class AoeTechTreeRiddleParser {
 				continue;
 			}
 			CivHelp help = parseCivHelp(raw);
-			String first = help.bonuses().isEmpty() ? "" : help.bonuses().get(0);
-			String second = help.bonuses().size() > 1 ? help.bonuses().get(help.bonuses().size() - 1) : first;
+			// Le premier bonus listé est le plus emblématique de la civ : on garde le
+			// dernier, moins connu, pour ne pas donner la réponse trop tôt.
+			String lesserBonus = help.bonuses().isEmpty() ? "" : help.bonuses().get(help.bonuses().size() - 1);
 
-			List<Hint> hints = List.of(new Hint("Type", help.type()),
+			List<Hint> hints = List.of(new Hint("Spécialité", help.type()),
+					new Hint("Arbre technologique", formatMissing(data, strings, civ, commonUnits, commonTechs)),
+					new Hint("Bonus de civilisation", lesserBonus),
 					new Hint("Bonus d'équipe", String.join(" · ", help.teamBonus())),
-					new Hint("Bonus de civilisation", second), new Hint("Autre bonus", first),
 					new Hint("Technologies uniques", String.join(" · ", help.uniqueTechs())),
 					new Hint(help.hasSeveralUniqueUnits() ? "Unités uniques" : "Unité unique",
 							String.join(" · ", help.uniqueUnits())));
@@ -85,6 +119,47 @@ public class AoeTechTreeRiddleParser {
 					hints.stream().map(h -> new Hint(h.label(), redact(h.text(), List.of(name)))).toList()));
 		}
 		return entries;
+	}
+
+	/** Identifiants (unités ou technologies) auxquels au moins {@link #COMMON_SHARE} des civs ont accès. */
+	private static List<String> commonIds(JsonNode data, String kind) {
+		Map<String, Integer> counts = new LinkedHashMap<>();
+		int civCount = 0;
+		for (JsonNode civ : iterable(data.get("civs").elements())) {
+			civCount++;
+			for (JsonNode id : civ.path(kind)) {
+				counts.merge(id.asText(), 1, Integer::sum);
+			}
+		}
+		double threshold = civCount * COMMON_SHARE;
+		return counts.entrySet().stream().filter(e -> e.getValue() >= threshold).map(Map.Entry::getKey).toList();
+	}
+
+	/** Unités puis technologies courantes absentes de l'arbre de la civ. */
+	private static String formatMissing(JsonNode data, JsonNode strings, JsonNode civ, List<String> commonUnits,
+			List<String> commonTechs) {
+		List<String> missing = new ArrayList<>();
+		missing.addAll(missingNames(data, strings, civ, "Unit", commonUnits, UNIT_NAME_OFFSET));
+		missing.addAll(missingNames(data, strings, civ, "Tech", commonTechs, TECH_NAME_OFFSET));
+		if (missing.isEmpty()) {
+			return "Aucune absence notable : arbre technologique presque complet";
+		}
+		return "N'a pas accès à : " + String.join(", ", missing);
+	}
+
+	private static List<String> missingNames(JsonNode data, JsonNode strings, JsonNode civ, String kind,
+			List<String> commonIds, int nameOffset) {
+		Set<String> owned = StreamSupport.stream(civ.path(kind).spliterator(), false).map(JsonNode::asText)
+				.collect(Collectors.toSet());
+		JsonNode definitions = data.path("data").path(kind);
+		return commonIds.stream().filter(id -> !owned.contains(id)).map(id -> {
+			JsonNode def = definitions.path(id);
+			String label = def.has("LanguageNameId")
+					? text(strings, String.valueOf(def.path("LanguageNameId").asInt() + nameOffset))
+					: "";
+			// Certains noms contiennent un retour à la ligne (<br>) pour l'arbre
+			return collapseSpaces(stripHtml(label));
+		}).filter(label -> !label.isEmpty()).distinct().toList();
 	}
 
 	private CivHelp parseCivHelp(String raw) {
@@ -165,13 +240,34 @@ public class AoeTechTreeRiddleParser {
 			List<String> civNames = c.civs.stream().map(civNameOf::get).sorted(collator).toList();
 			List<String> hidden = List.of(c.name, c.name + " d'élite");
 
+			String upgrades = redact(improvements.replaceFirst("(?U)^Améliorations\\s*:\\s*", ""), hidden);
+
 			return new Entry(c.name, List.of(new Hint("Catégorie", categoryOf(c.unit)),
-					new Hint("Coût", formatCost(c.unit)), new Hint("Statistiques de base", formatStats(c.unit)),
-					new Hint("Disponibilité", formatAvailability(civNames, totalCivs)),
-					new Hint("Améliorations",
-							redact(improvements.replaceFirst("(?U)^Améliorations\\s*:\\s*", ""), hidden)),
-					new Hint("Description", redact(description, hidden))));
+					new Hint("Disponibilité", formatAvailability(civNames.size(), totalCivs)),
+					new Hint("Ressources", formatResources(c.unit)),
+					new Hint("Points forts et faibles",
+							collapseSpaces(DEMONYMS.matcher(redact(description, hidden)).replaceAll(""))),
+					new Hint("Coût et statistiques", formatCost(c.unit) + " · " + formatStats(c.unit)),
+					civNames.size() <= MAX_CIVS_LISTED
+							? new Hint("Civilisations", String.join(", ", civNames)
+									+ (upgrades.isEmpty() ? "" : " · Améliorations : " + upgrades))
+							: new Hint("Améliorations", upgrades)));
 		}).toList();
+	}
+
+	/** Types de ressources seulement, sans les montants. */
+	private static String formatResources(JsonNode unit) {
+		List<String> parts = new ArrayList<>();
+		unit.path("Cost").properties().forEach(cost -> parts.add(
+				RESOURCES_PARTITIVE.getOrDefault(cost.getKey(), RESOURCES.getOrDefault(cost.getKey(), cost.getKey()))));
+		if (parts.isEmpty()) {
+			return "Ne coûte aucune ressource";
+		}
+		if (parts.size() == 1) {
+			return "Coûte uniquement " + parts.get(0);
+		}
+		return "Coûte " + String.join(", ", parts.subList(0, parts.size() - 1)) + " et "
+				+ parts.get(parts.size() - 1);
 	}
 
 	private static String categoryOf(JsonNode unit) {
@@ -200,18 +296,18 @@ public class AoeTechTreeRiddleParser {
 				"Portée : " + unit.path("Range").asText(), "Vitesse : " + unit.path("Speed").asText());
 	}
 
-	private static String formatAvailability(List<String> civNames, int totalCivs) {
-		if (civNames.size() == 1) {
+	/** Nombre de civs seulement : leurs noms ne viennent qu'au dernier indice. */
+	private static String formatAvailability(int civCount, int totalCivs) {
+		if (civCount == 1) {
 			return "Unité unique : une seule civilisation y a accès";
 		}
-		if (civNames.size() <= 5) {
-			return "Unité régionale, disponible pour " + civNames.size() + " civilisations : "
-					+ String.join(", ", civNames);
+		if (civCount <= 5) {
+			return "Unité régionale, disponible pour " + civCount + " civilisations";
 		}
-		if (civNames.size() == totalCivs) {
+		if (civCount == totalCivs) {
 			return "Disponible pour toutes les civilisations";
 		}
-		return "Disponible pour " + civNames.size() + " civilisations sur " + totalCivs;
+		return "Disponible pour " + civCount + " civilisations sur " + totalCivs;
 	}
 
 	// ---------- Utilitaires texte ----------
@@ -224,6 +320,11 @@ public class AoeTechTreeRiddleParser {
 		String plain = text.replaceAll("(?i)<br\\s*/?>", "\n").replaceAll("<[^>]+>", "").replaceAll("‹[^›]*›", "")
 				.replace('’', '\'').replaceAll("[ \\t]+", " ");
 		return trim(plain.lines().map(AoeTechTreeRiddleParser::trim).collect(Collectors.joining("\n")));
+	}
+
+	/** Une seule espace entre les mots (retours à la ligne compris). */
+	private static String collapseSpaces(String value) {
+		return trim(value.replaceAll("\\s+", " "));
 	}
 
 	/** Contrairement à String.trim(), retire aussi les espaces insécables présentes dans les textes FR. */

@@ -1,5 +1,7 @@
 package goodshi.ageofquizz.service;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +19,7 @@ import goodshi.ageofquizz.model.CreateRoomResult;
 import goodshi.ageofquizz.model.NewQuestionPayload;
 import goodshi.ageofquizz.model.Room;
 import goodshi.ageofquizz.model.Room.RoomStatus;
+import goodshi.ageofquizz.model.RoomSettings;
 import goodshi.ageofquizz.repository.QuestionRepository;
 
 @Service
@@ -29,6 +32,9 @@ public class MultiplayerService {
 
 	@Autowired
 	private QuestionRepository questionRepository;
+
+	@Autowired
+	private QuestionService questionService;
 
 	/**
 	 * Create a room for host. If host == null, an anonymous participantId is
@@ -80,14 +86,15 @@ public class MultiplayerService {
 	}
 
 	/**
-	 * Start game for a room and automatically fetch a number of random validated
-	 * questions. Only basic validation is performed here (room existence).
+	 * Start game for a room with questions picked according to the room settings
+	 * (filters + number of questions).
 	 */
-	public Room startGameWithRandomQuestions(String code, int numberOfQuestions) {
-		List<Question> questions = questionRepository.findRandomQuestions(Question.QuestionStatus.VALIDATED, null,
-				org.springframework.data.domain.PageRequest.of(0, numberOfQuestions));
-		List<Integer> ids = questions.stream().map(goodshi.ageofquizz.entity.Question::getId).toList();
-		List<Question> questionsWithAnswers = questionRepository.findByIdsWithAnswers(ids);
+	public Room startGameWithRoomSettings(String code) {
+		Room room = getRoomOrThrow(code);
+		List<Question> questions = questionService.selectQuestions(room.getSettings().toFilter());
+		List<Integer> ids = questions.stream().map(Question::getId).toList();
+		List<Question> questionsWithAnswers = new ArrayList<>(questionRepository.findByIdsWithAnswers(ids));
+		Collections.shuffle(questionsWithAnswers);
 		return startGame(code, questionsWithAnswers);
 	}
 
@@ -95,8 +102,69 @@ public class MultiplayerService {
 	 * Start game but only if the requester is the host. Throws
 	 * IllegalStateException if not allowed.
 	 */
-	public Room startGameIfHost(String code, User requester, String participantId, int numberOfQuestions) {
+	public Room startGameIfHost(String code, User requester, String participantId) {
 		Room room = getRoomOrThrow(code);
+		checkHost(room, requester, participantId, "Only host can start the game");
+		return startGameWithRoomSettings(code);
+	}
+
+	/**
+	 * Replace the room settings (host only, before the game starts) and notify
+	 * every client of the new values.
+	 */
+	public RoomSettings updateSettingsIfHost(String code, User requester, RoomSettings settings) {
+		Room room = getRoomOrThrow(code);
+		checkHost(room, requester, settings.getParticipantId(), "Only host can change the settings");
+		if (room.getStatus() == RoomStatus.IN_GAME) {
+			throw new IllegalArgumentException("Settings cannot be changed during a game");
+		}
+		settings.setParticipantId(null);
+		settings.clamp();
+		room.setSettings(settings);
+
+		eventService.sendToRoom(code, new GameEvent("ROOM_SETTINGS_UPDATED", buildLobbyPayload(room)));
+		return settings;
+	}
+
+	/**
+	 * Bring a player of the finished game back to the lobby for a rematch. The
+	 * first one to come back resets the room and becomes host; the next ones
+	 * simply rejoin. Only participants of the previous game are accepted.
+	 */
+	public Room rematch(String code, User requester, String participantId) {
+		Room room = getRoomOrThrow(code);
+		synchronized (room) {
+			if (room.getStatus() == RoomStatus.IN_GAME) {
+				throw new IllegalStateException("A game is already in progress");
+			}
+			if (room.getStatus() == RoomStatus.FINISHED) {
+				room.resetForRematch();
+			}
+
+			boolean authenticated = requester != null && requester.getId() != null && requester.getId() != -1L;
+			String participantKey = authenticated ? "user:" + requester.getId() : participantId;
+			if (participantKey == null) {
+				throw new IllegalArgumentException("Anonymous participantId required");
+			}
+			if (room.getParticipantsByKey().containsKey(participantKey)) {
+				return room;
+			}
+			User previous = room.getPreviousParticipantsByKey().get(participantKey);
+			if (previous == null) {
+				throw new IllegalArgumentException("Participant was not in the previous game");
+			}
+
+			User player = authenticated ? requester : previous;
+			room.addPlayer(player, participantKey);
+			if (room.getParticipantsByKey().size() == 1) {
+				room.setHost(player);
+			}
+			notifyPlayerJoined(room, PlayerNames.displayName(player));
+			return room;
+		}
+	}
+
+	private void checkHost(Room room, User requester, String participantId, String message) {
 		boolean allowed = false;
 		if (requester != null && requester.getId() != null) {
 			allowed = room.getHost().getId().equals(requester.getId());
@@ -105,9 +173,8 @@ public class MultiplayerService {
 			allowed = participantId.equals(hostKey);
 		}
 		if (!allowed) {
-			throw new IllegalStateException("Only host can start the game");
+			throw new IllegalStateException(message);
 		}
-		return startGameWithRandomQuestions(code, numberOfQuestions);
 	}
 
 	/**
@@ -135,7 +202,7 @@ public class MultiplayerService {
 		Map<String, Object> payload = buildLobbyPayload(room);
 		payload.put("participantKey", participantKey);
 		User p = room.getParticipantsByKey().get(participantKey);
-		payload.put("username", p == null ? null : p.getUsername());
+		payload.put("username", PlayerNames.displayName(p));
 		payload.put("ready", ready);
 
 		eventService.sendToRoom(code, new GameEvent("PLAYER_READY", payload));
@@ -152,9 +219,11 @@ public class MultiplayerService {
 			User u = e.getValue();
 			player.put("participantKey", e.getKey());
 			player.put("userId", u == null || u.getId() == null ? -1L : u.getId());
-			player.put("username", u == null ? e.getKey() : u.getUsername());
+			player.put("username", u == null ? e.getKey() : PlayerNames.displayName(u));
 			player.put("ready", room.isParticipantReady(e.getKey()));
 			player.put("host", e.getKey().equals(hostKey));
+			// link to the public profile (guests have none)
+			player.put("userProfileId", u == null || u.getUserProfile() == null ? null : u.getUserProfile().getId());
 			return player;
 		}).collect(Collectors.toList());
 
@@ -166,6 +235,7 @@ public class MultiplayerService {
 		payload.put("players", players);
 		payload.put("host", host);
 		payload.put("status", room.getStatus());
+		payload.put("settings", room.getSettings());
 		return payload;
 	}
 
@@ -186,7 +256,7 @@ public class MultiplayerService {
 		Map<String, Boolean> readyMap = new HashMap<>();
 		for (Map.Entry<String, User> e : room.getParticipantsByKey().entrySet()) {
 			String key = e.getKey();
-			String username = e.getValue() == null ? key : e.getValue().getUsername();
+			String username = e.getValue() == null ? key : PlayerNames.displayName(e.getValue());
 			readyMap.put(username, room.isParticipantReady(key));
 		}
 		state.put("ready", readyMap);
@@ -207,7 +277,7 @@ public class MultiplayerService {
 		Room room = getRoomOrThrow(code);
 		if (user != null) {
 			room.addPlayer(user);
-			notifyPlayerJoined(room, user.getUsername());
+			notifyPlayerJoined(room, PlayerNames.displayName(user));
 			return new CreateRoomResult(room, null);
 		}
 		if (participantId == null || participantId.trim().isEmpty()) {

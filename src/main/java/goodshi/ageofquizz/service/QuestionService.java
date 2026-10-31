@@ -81,6 +81,14 @@ public class QuestionService {
 	}
 
 	public List<QuestionDTO> getQuestions(@Valid FilterQuestionDTO filter) {
+		return selectQuestions(filter).stream().map(QuestionDTO::fromEntity).toList();
+	}
+
+	/**
+	 * Tire au hasard les questions validées correspondant au filtre, complétées
+	 * par des questions aléatoires s'il n'y en a pas assez.
+	 */
+	public List<Question> selectQuestions(FilterQuestionDTO filter) {
 
 		int wanted = filter.getNumberOfQuestions();
 		List<QuestionTheme> excludedThemes = filter.getExcludedThemes() == null
@@ -118,6 +126,6 @@ public class QuestionService {
 			}
 		}
 
-		return result.stream().map(QuestionDTO::fromEntity).toList();
+		return result;
 	}
 }

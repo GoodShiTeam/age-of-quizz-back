@@ -40,4 +40,12 @@ public interface QuestionRepository extends JpaRepository<Question, Integer>, Jp
 			""")
 	List<Question> findAllWithAnswersAndAuthor();
 
+	/** Paires [statut, nombre] des questions créées par un auteur. */
+	@Query("""
+			    SELECT q.status, COUNT(q) FROM Question q
+			    WHERE q.author.id = :authorId
+			    GROUP BY q.status
+			""")
+	List<Object[]> countByAuthorGroupByStatus(@Param("authorId") Long authorId);
+
 }

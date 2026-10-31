@@ -146,7 +146,7 @@ public class GameService {
 			if (userId != null && userId != -1L) {
 				try {
 					User u = userService.getUser(userId);
-					username = u.getUsername();
+					username = PlayerNames.displayName(u);
 				} catch (Exception e) {
 					username = "user:" + userId;
 				}
@@ -364,7 +364,7 @@ public class GameService {
 
 			PlayerResult pr = new PlayerResult();
 			pr.setUserId(uid);
-			pr.setUsername(p.getUsername());
+			pr.setUsername(PlayerNames.displayName(p));
 			pr.setScore(score);
 			pr.setPoints(points);
 			pr.setCorrectAnswers(correctAnswers);
@@ -373,6 +373,7 @@ public class GameService {
 			pr.setAverageTimePerQuestion(avg);
 			pr.setAccuracy(Math.round(accuracy * 10.0) / 10.0);
 			pr.setAvatar(p.getUserProfile() != null ? p.getUserProfile().getAvatar() : null);
+			pr.setUserProfileId(p.getUserProfile() != null ? p.getUserProfile().getId() : null);
 			results.add(pr);
 		}
 

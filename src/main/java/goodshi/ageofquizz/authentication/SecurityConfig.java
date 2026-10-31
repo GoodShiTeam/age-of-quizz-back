@@ -13,6 +13,7 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -60,6 +61,11 @@ public class SecurityConfig {
 
 				.authorizeHttpRequests(authorize -> authorize.requestMatchers(SWAGGER_UI_RESOURCES).hasRole("ADMIN")
 						.requestMatchers("/media/**").permitAll()
+						// Sans ça, une exception sur une route publique est renvoyée vers /error,
+						// qui exige d'être connecté : le client reçoit un 403 au lieu de la vraie erreur
+						.requestMatchers("/error").permitAll()
+						// Profils publics : visibles sans être connecté
+						.requestMatchers(HttpMethod.GET, "/users/profile/**", "/leaderboard").permitAll()
 						.requestMatchers("/login", "/register", "/ws/**", "/users/forgot-password",
 								"/users/verify-email", "/users/reset-password", "/questions/quizz",
 								"questions/submit-answers", "/multiplayer/**", "/daily-riddle", "/daily-riddle/guess")

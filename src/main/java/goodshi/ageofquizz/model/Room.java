@@ -24,8 +24,9 @@ public class Room {
 
 	private long questionStartTime;
 	private long questionEndTime;
-	private int questionDuration = 15; // secondes
 	private boolean questionActive = false;
+
+	private RoomSettings settings = new RoomSettings();
 
 	// use participantKey (String) as key: for authenticated users "user:{id}", for
 	// guests the participantId (anon_xxx)
@@ -39,6 +40,10 @@ public class Room {
 	// mapping participantKey -> User object (keeps displayName and other transient
 	// info)
 	private Map<String, User> participantsByKey = new LinkedHashMap<>();
+
+	// participants of the finished game, who can come back for a rematch
+	// (keeps the display name of guests)
+	private Map<String, User> previousParticipantsByKey = new LinkedHashMap<>();
 
 	private String gameSessionId;
 	private long gameStartTime;
@@ -61,6 +66,30 @@ public class Room {
 		}
 		this.participantsByKey.put(hostParticipantKey, host);
 		this.scores.put(hostParticipantKey, 0);
+	}
+
+	/**
+	 * Back to an empty lobby after a finished game: participants must come back
+	 * one by one (rematch), so that players who left don't block the start. The
+	 * settings are kept.
+	 */
+	public void resetForRematch() {
+		previousParticipantsByKey = new LinkedHashMap<>(participantsByKey);
+		participantsByKey.clear();
+		players.clear();
+		scores.clear();
+		readyParticipantIds.clear();
+		answeredParticipantIds.clear();
+		questionResponses.clear();
+		questions = new ArrayList<>();
+		currentQuestionIndex = 0;
+		questionActive = false;
+		gameSessionId = null;
+		status = RoomStatus.WAITING;
+	}
+
+	public Map<String, User> getPreviousParticipantsByKey() {
+		return previousParticipantsByKey;
 	}
 
 	public Question getCurrentQuestion() {
@@ -245,12 +274,17 @@ public class Room {
 		this.questionEndTime = questionEndTime;
 	}
 
+	/** Durée d'une question en secondes, issue des options de la salle. */
 	public int getQuestionDuration() {
-		return questionDuration;
+		return settings.getQuestionDuration();
 	}
 
-	public void setQuestionDuration(int questionDuration) {
-		this.questionDuration = questionDuration;
+	public RoomSettings getSettings() {
+		return settings;
+	}
+
+	public void setSettings(RoomSettings settings) {
+		this.settings = settings;
 	}
 
 	public void setQuestionActive(boolean questionActive) {

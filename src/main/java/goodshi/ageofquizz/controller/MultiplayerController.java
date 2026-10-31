@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,10 +21,12 @@ import goodshi.ageofquizz.model.CreateRoomResponse;
 import goodshi.ageofquizz.model.CreateRoomResult;
 import goodshi.ageofquizz.model.JoinRoomRequest;
 import goodshi.ageofquizz.model.Room;
+import goodshi.ageofquizz.model.RoomSettings;
 import goodshi.ageofquizz.model.StartGameRequest;
 import goodshi.ageofquizz.model.ReadyRequest;
 import goodshi.ageofquizz.service.AuthenticationFacade;
 import goodshi.ageofquizz.service.MultiplayerService;
+import goodshi.ageofquizz.service.PlayerNames;
 
 @RestController
 @RequestMapping("/multiplayer")
@@ -41,8 +44,8 @@ public class MultiplayerController {
 		String displayName = request == null ? null : request.getDisplayName();
 		CreateRoomResult result = multiplayerService.createRoomForHost(user, displayName);
 		Room room = result.getRoom();
-		CreateRoomResponse resp = new CreateRoomResponse(room.getCode(), room.getHost().getUsername(),
-				room.getPlayers().stream().map(u -> u.getUsername()).collect(Collectors.toList()),
+		CreateRoomResponse resp = new CreateRoomResponse(room.getCode(), PlayerNames.displayName(room.getHost()),
+				room.getPlayers().stream().map(PlayerNames::displayName).collect(Collectors.toList()),
 				result.getParticipantId());
 		return ResponseEntity.status(HttpStatus.CREATED).body(resp);
 	}
@@ -56,7 +59,7 @@ public class MultiplayerController {
 			Room room = result.getRoom();
 			Map<String, Object> resp = new HashMap<>();
 			resp.put("code", room.getCode());
-			resp.put("players", room.getPlayers().stream().map(u -> u.getUsername()).collect(Collectors.toList()));
+			resp.put("players", room.getPlayers().stream().map(PlayerNames::displayName).collect(Collectors.toList()));
 			resp.put("participantId", result.getParticipantId());
 			return ResponseEntity.ok(resp);
 		} catch (IllegalArgumentException e) {
@@ -69,13 +72,40 @@ public class MultiplayerController {
 		User user = authenticationFacade.getAuthenticatedUser();
 		String participantId = req == null ? null : req.getParticipantId();
 		try {
-			int numberOfQuestions = 5;
-			multiplayerService.startGameIfHost(code, user, participantId, numberOfQuestions);
+			multiplayerService.startGameIfHost(code, user, participantId);
 			return ResponseEntity.ok(Map.of("message", "Game started", "code", code));
 		} catch (IllegalArgumentException e) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
 		} catch (IllegalStateException e) {
 			// used when requester is not host
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
+		}
+	}
+
+	/** Back to the lobby of the same room after a finished game. */
+	@PostMapping("/rooms/{code}/rematch")
+	public ResponseEntity<?> rematch(@PathVariable String code, @RequestBody(required = false) StartGameRequest req) {
+		User user = authenticationFacade.getAuthenticatedUser();
+		String participantId = req == null ? null : req.getParticipantId();
+		try {
+			Room room = multiplayerService.rematch(code, user, participantId);
+			return ResponseEntity.ok(Map.of("code", room.getCode()));
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+		} catch (IllegalStateException e) {
+			return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
+		}
+	}
+
+	@PutMapping("/rooms/{code}/settings")
+	public ResponseEntity<?> updateSettings(@PathVariable String code, @RequestBody RoomSettings req) {
+		User user = authenticationFacade.getAuthenticatedUser();
+		try {
+			RoomSettings settings = multiplayerService.updateSettingsIfHost(code, user, req);
+			return ResponseEntity.ok(settings);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+		} catch (IllegalStateException e) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
 		}
 	}

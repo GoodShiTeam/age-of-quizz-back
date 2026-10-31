@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import goodshi.ageofquizz.dto.EmailDTO;
 import goodshi.ageofquizz.dto.PasswordChangeRequestDTO;
 import goodshi.ageofquizz.dto.ResetPasswordRequestDTO;
+import goodshi.ageofquizz.dto.UserStatsDTO;
 import goodshi.ageofquizz.entity.User;
 import goodshi.ageofquizz.entity.UserProfile;
 import goodshi.ageofquizz.exception.ForbiddenException;
@@ -29,6 +30,7 @@ import goodshi.ageofquizz.exception.UserWithSamePseudoExistException;
 import goodshi.ageofquizz.exception.UserWithSameUsernameExistException;
 import goodshi.ageofquizz.service.AuthenticationFacade;
 import goodshi.ageofquizz.service.UserService;
+import goodshi.ageofquizz.service.UserStatsService;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.validation.Valid;
@@ -43,6 +45,9 @@ public class UserController {
 	@Autowired
 	private AuthenticationFacade authenticationFacade;
 
+	@Autowired
+	private UserStatsService userStatsService;
+
 	private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
 	@GetMapping("/{userId}")
@@ -54,6 +59,11 @@ public class UserController {
 	@GetMapping("/profile/{userProfileId}")
 	public ResponseEntity<UserProfile> getUserProfile(@PathVariable Long userProfileId) {
 		return ResponseEntity.ok(userService.getUserProfile(userProfileId));
+	}
+
+	@GetMapping("/profile/{userProfileId}/stats")
+	public ResponseEntity<UserStatsDTO> getUserStats(@PathVariable Long userProfileId) {
+		return ResponseEntity.ok(userStatsService.getStatsByProfileId(userProfileId));
 	}
 
 	@GetMapping("/current")
