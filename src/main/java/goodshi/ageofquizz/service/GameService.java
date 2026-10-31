@@ -397,6 +397,9 @@ public class GameService {
 			QuestionDetail qd = new QuestionDetail();
 			qd.setQuestionId(q.getId());
 			qd.setQuestionText(q.getLibelle());
+			qd.setExplanation(q.getExplication());
+			qd.setFileUrl(q.getFileUrl());
+			qd.setQuestionType(q.getType() == null ? null : q.getType().name());
 			Map<String, PlayerAnswerRecord> map = room.getQuestionResponses().get(q.getId());
 			Map<String, Object> prs = new HashMap<>();
 			if (map != null) {

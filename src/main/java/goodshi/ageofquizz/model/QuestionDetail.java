@@ -7,8 +7,36 @@ public class QuestionDetail {
     private Integer questionId;
     private String questionText;
     private Map<String, Object> playerResponses; // key: username or userId as string, value: response detail
+    // shown in the end-of-game recap
+    private String explanation;
+    private String fileUrl;
+    private String questionType;
 
     public QuestionDetail() {}
+
+    public String getExplanation() {
+        return explanation;
+    }
+
+    public void setExplanation(String explanation) {
+        this.explanation = explanation;
+    }
+
+    public String getFileUrl() {
+        return fileUrl;
+    }
+
+    public void setFileUrl(String fileUrl) {
+        this.fileUrl = fileUrl;
+    }
+
+    public String getQuestionType() {
+        return questionType;
+    }
+
+    public void setQuestionType(String questionType) {
+        this.questionType = questionType;
+    }
 
     public Integer getQuestionId() {
         return questionId;
