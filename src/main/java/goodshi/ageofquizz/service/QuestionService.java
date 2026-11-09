@@ -7,12 +7,14 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import goodshi.ageofquizz.dto.AnswerCreateRequestDTO;
@@ -24,6 +26,7 @@ import goodshi.ageofquizz.entity.Question;
 import goodshi.ageofquizz.entity.Question.QuestionStatus;
 import goodshi.ageofquizz.entity.Question.QuestionTheme;
 import goodshi.ageofquizz.entity.User;
+import goodshi.ageofquizz.enums.RoleEnum;
 import goodshi.ageofquizz.exception.ResourceNotFoundException;
 import goodshi.ageofquizz.repository.QuestionRepository;
 import goodshi.ageofquizz.util.QuestionSpecification;
@@ -74,6 +77,13 @@ public class QuestionService {
 	public Question updateQuestion(QuestionCreateRequestDTO request, User author) {
 		Question question = questionRepository.findById(request.getId()).orElseThrow(
 				() -> new ResourceNotFoundException("Question with id : " + request.getId() + " doesn't exist"));
+
+		// Un auteur ne modifie que ses propres questions, un admin toutes.
+		boolean isAdmin = author.getRoles().stream().anyMatch(role -> role.getName() == RoleEnum.ADMIN);
+		boolean isOwner = question.getAuthor() != null && Objects.equals(question.getAuthor().getId(), author.getId());
+		if (!isAdmin && !isOwner) {
+			throw new AccessDeniedException("Vous ne pouvez modifier que vos propres questions");
+		}
 
 		question.getAnswers().clear();
 

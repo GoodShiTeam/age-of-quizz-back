@@ -63,7 +63,7 @@ public class QuestionController {
 	}
 
 	@GetMapping("/all")
-	@PreAuthorize("hasAnyRole('REVIEWER', 'ADMIN')")
+	@PreAuthorize("hasAnyRole('AUTHOR', 'REVIEWER', 'ADMIN')")
 	public ResponseEntity<List<QuestionDTO>> getAllQuestions() {
 
 		List<QuestionDTO> dtos = questionService.getAllQuestions();
