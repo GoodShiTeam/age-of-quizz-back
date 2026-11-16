@@ -40,6 +40,34 @@ public interface QuestionRepository extends JpaRepository<Question, Integer>, Jp
 			""")
 	List<Question> findAllWithAnswersAndAuthor();
 
+	/** Pseudos distincts des auteurs ayant des questions dans ce statut. */
+	@Query("""
+			    SELECT DISTINCT q.author.username FROM Question q
+			    WHERE q.status = :status
+			    ORDER BY q.author.username
+			""")
+	List<String> findAuthorUsernamesByStatus(@Param("status") QuestionStatus status);
+
+	/** Triplets [thème, civilisation, type] des questions d'un auteur dans ce statut. */
+	@Query("""
+			    SELECT q.theme, q.civilisation, q.type FROM Question q
+			    WHERE q.author.id = :authorId AND q.status = :status
+			""")
+	List<Object[]> findThemeCivilisationTypeByAuthorAndStatus(@Param("authorId") Long authorId,
+			@Param("status") QuestionStatus status);
+
+	/**
+	 * Par auteur : [authorId, questions créées, questions dans le statut donné
+	 * (validées pour le classement)].
+	 */
+	@Query("""
+			    SELECT q.author.id, COUNT(q), SUM(CASE WHEN q.status = :status THEN 1 ELSE 0 END)
+			    FROM Question q
+			    WHERE q.author IS NOT NULL
+			    GROUP BY q.author.id
+			""")
+	List<Object[]> countByAuthorWithStatus(@Param("status") QuestionStatus status);
+
 	/** Paires [statut, nombre] des questions créées par un auteur. */
 	@Query("""
 			    SELECT q.status, COUNT(q) FROM Question q

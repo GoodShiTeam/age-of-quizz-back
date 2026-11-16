@@ -25,6 +25,8 @@ public class RoomSettings {
 	private QuestionTheme theme;
 	private QuestionCivilisation civilisation;
 	private QuestionBuilding building;
+	/** Pseudo de l'auteur des questions ; null = tous les auteurs. */
+	private String authorUsername;
 	private List<QuestionTheme> excludedThemes;
 
 	private String participantId;
@@ -48,6 +50,7 @@ public class RoomSettings {
 		filter.setTheme(theme);
 		filter.setCivilisation(civilisation);
 		filter.setBuilding(building);
+		filter.setAuthorUsername(authorUsername);
 		filter.setExcludedThemes(excludedThemes);
 		return filter;
 	}
@@ -90,6 +93,14 @@ public class RoomSettings {
 
 	public void setBuilding(QuestionBuilding building) {
 		this.building = building;
+	}
+
+	public String getAuthorUsername() {
+		return authorUsername;
+	}
+
+	public void setAuthorUsername(String authorUsername) {
+		this.authorUsername = authorUsername;
 	}
 
 	public List<QuestionTheme> getExcludedThemes() {

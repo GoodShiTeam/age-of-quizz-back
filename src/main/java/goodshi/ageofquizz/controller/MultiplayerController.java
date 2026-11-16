@@ -123,6 +123,21 @@ public class MultiplayerController {
 		}
 	}
 
+	/** Quitter le salon ; body optionnel { participantId } pour un invité. */
+	@PostMapping("/rooms/{code}/leave")
+	public ResponseEntity<?> leaveRoom(@PathVariable String code, @RequestBody(required = false) ReadyRequest req) {
+		User user = authenticationFacade.getAuthenticatedUser();
+		String participantId = req == null ? null : req.getParticipantId();
+		try {
+			multiplayerService.leaveRoom(code, user, participantId);
+			return ResponseEntity.ok(Map.of("message", "left room", "code", code));
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+		} catch (IllegalStateException e) {
+			return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
+		}
+	}
+
 	@GetMapping("/rooms/{code}")
 	public ResponseEntity<?> getRoom(@PathVariable String code) {
 		return ResponseEntity.ok().body("Infos de la room " + code);

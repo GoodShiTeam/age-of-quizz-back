@@ -178,19 +178,56 @@ public class MultiplayerService {
 	}
 
 	/**
+	 * Fait quitter le salon à un participant. Si c'était l'hôte, le premier
+	 * joueur restant le remplace ; une salle vide est supprimée. Impossible
+	 * pendant une partie.
+	 */
+	public void leaveRoom(String code, User user, String participantId) {
+		Room room = getRoomOrThrow(code);
+		synchronized (room) {
+			if (room.getStatus() == RoomStatus.IN_GAME) {
+				throw new IllegalStateException("Cannot leave the room during a game");
+			}
+			String participantKey = resolveParticipantKey(user, participantId);
+			User leaving = room.getParticipantsByKey().get(participantKey);
+			if (leaving == null) {
+				// déjà parti : rien à faire
+				return;
+			}
+			boolean wasHost = participantKey.equals(room.getParticipantKeyForHost());
+			room.removePlayer(participantKey);
+
+			if (room.getParticipantsByKey().isEmpty()) {
+				rooms.remove(code);
+				return;
+			}
+			if (wasHost) {
+				room.setHost(room.getParticipantsByKey().values().iterator().next());
+			}
+
+			Map<String, Object> payload = buildLobbyPayload(room);
+			payload.put("participantKey", participantKey);
+			payload.put("username", PlayerNames.displayName(leaving));
+			eventService.sendToRoom(code, new GameEvent("PLAYER_LEFT", payload));
+		}
+	}
+
+	private static String resolveParticipantKey(User user, String participantId) {
+		if (user != null && user.getId() != null && user.getId() != -1L) {
+			return "user:" + user.getId();
+		}
+		if (participantId == null) {
+			throw new IllegalArgumentException("Anonymous participantId required");
+		}
+		return participantId;
+	}
+
+	/**
 	 * Set/unset a participant as ready in a room and notify other clients.
 	 */
 	public void setParticipantReady(String code, User user, String participantId, boolean ready) {
 		Room room = getRoomOrThrow(code);
-		String participantKey;
-		if (user != null && user.getId() != null && user.getId() != -1L) {
-			participantKey = "user:" + user.getId();
-		} else {
-			if (participantId == null) {
-				throw new IllegalArgumentException("Anonymous participantId required");
-			}
-			participantKey = participantId;
-		}
+		String participantKey = resolveParticipantKey(user, participantId);
 		// ensure participant exists in room
 		if (!room.getParticipantsByKey().containsKey(participantKey)) {
 			throw new IllegalArgumentException("Participant not in room");

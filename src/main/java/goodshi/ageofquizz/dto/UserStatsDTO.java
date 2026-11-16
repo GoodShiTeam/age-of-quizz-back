@@ -37,6 +37,14 @@ public record UserStatsDTO(Overview overview, List<CategoryStat> byTheme, List<C
 			int correctAnswers, int totalQuestions) {
 	}
 
-	public record AuthorStats(int created, int validated, int inReview, int rejected) {
+	/**
+	 * {@code validatedThemes} / {@code validatedCivilisations} = nombre de thèmes
+	 * / civilisations distincts couverts par les questions validées (hors
+	 * "aucune civilisation"). {@code validatedMedia} = questions image ou son
+	 * validées. {@code timesAnswered} = réponses des autres joueurs aux
+	 * questions de l'auteur.
+	 */
+	public record AuthorStats(int created, int validated, int inReview, int rejected, int validatedThemes,
+			int validatedCivilisations, int validatedMedia, int timesAnswered) {
 	}
 }

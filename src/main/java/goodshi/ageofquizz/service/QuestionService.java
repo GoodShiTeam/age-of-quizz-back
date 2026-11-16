@@ -100,6 +100,11 @@ public class QuestionService {
 		return selectQuestions(filter).stream().map(QuestionDTO::fromEntity).toList();
 	}
 
+	/** Pseudos des auteurs ayant au moins une question validée, triés. */
+	public List<String> getAuthorsWithValidatedQuestions() {
+		return questionRepository.findAuthorUsernamesByStatus(QuestionStatus.VALIDATED);
+	}
+
 	/**
 	 * Tire les questions validées correspondant au filtre, complétées par
 	 * d'autres questions s'il n'y en a pas assez. Le tirage est équilibré entre
@@ -115,6 +120,7 @@ public class QuestionService {
 		Specification<Question> spec = Specification.where(QuestionSpecification.hasTheme(filter.getTheme()))
 				.and(QuestionSpecification.hasNoneOfThemes(excludedThemes))
 				.and(QuestionSpecification.hasCivilisation(filter.getCivilisation()))
+				.and(QuestionSpecification.hasAuthor(filter.getAuthorUsername()))
 				.and(QuestionSpecification.isStatus(QuestionStatus.VALIDATED))
 				.and(QuestionSpecification.hasBuilding(filter.getBuilding()));
 

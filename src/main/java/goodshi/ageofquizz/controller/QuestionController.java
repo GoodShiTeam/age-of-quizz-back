@@ -71,6 +71,12 @@ public class QuestionController {
 		return ResponseEntity.ok(dtos);
 	}
 
+	/** Auteurs proposés dans les filtres de partie (solo et multijoueur). */
+	@GetMapping("/authors")
+	public ResponseEntity<List<String>> getAuthors() {
+		return ResponseEntity.ok(questionService.getAuthorsWithValidatedQuestions());
+	}
+
 	@PostMapping("/quizz")
 	public ResponseEntity<List<QuestionDTO>> getQuestions(@Valid @RequestBody FilterQuestionDTO filterQuestionDTO) {
 

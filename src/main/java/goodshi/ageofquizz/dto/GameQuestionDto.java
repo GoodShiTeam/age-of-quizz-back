@@ -16,6 +16,7 @@ public record GameQuestionDto(
         Question.QuestionCivilisation civilisation,
         Question.QuestionBuilding building,
         String fileUrl,
+        String authorUsername,
         List<GameAnswerDto> answers) {
 
     public static GameQuestionDto fromEntity(Question q) {
@@ -27,6 +28,7 @@ public record GameQuestionDto(
                 q.getCivilisation(),
                 q.getBuilding(),
                 q.getFileUrl(),
+                q.getAuthor() != null ? q.getAuthor().getUsername() : null,
                 q.getAnswers().stream().map(GameAnswerDto::fromEntity).toList());
     }
 }

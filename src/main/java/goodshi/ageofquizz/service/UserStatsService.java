@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,6 +32,8 @@ import goodshi.ageofquizz.entity.GameSessionEntity;
 import goodshi.ageofquizz.entity.Question;
 import goodshi.ageofquizz.entity.Question.QuestionCivilisation;
 import goodshi.ageofquizz.entity.Question.QuestionStatus;
+import goodshi.ageofquizz.entity.Question.QuestionTheme;
+import goodshi.ageofquizz.entity.Question.QuestionType;
 import goodshi.ageofquizz.entity.User;
 import goodshi.ageofquizz.entity.UserAnswer;
 import goodshi.ageofquizz.exception.ResourceNotFoundException;
@@ -223,10 +226,28 @@ public class UserStatsService {
 		if (created == 0) {
 			return null;
 		}
+
+		Set<QuestionTheme> themes = EnumSet.noneOf(QuestionTheme.class);
+		Set<QuestionCivilisation> civilisations = EnumSet.noneOf(QuestionCivilisation.class);
+		int media = 0;
+		for (Object[] row : questionRepository.findThemeCivilisationTypeByAuthorAndStatus(userId,
+				QuestionStatus.VALIDATED)) {
+			if (row[0] != null) {
+				themes.add((QuestionTheme) row[0]);
+			}
+			if (row[1] != null && row[1] != QuestionCivilisation.NONE) {
+				civilisations.add((QuestionCivilisation) row[1]);
+			}
+			if (row[2] == QuestionType.IMAGE || row[2] == QuestionType.SOUND) {
+				media++;
+			}
+		}
+
 		return new AuthorStats(created, byStatus.getOrDefault(QuestionStatus.VALIDATED, 0),
 				byStatus.getOrDefault(QuestionStatus.CREATED_REVIEW, 0)
 						+ byStatus.getOrDefault(QuestionStatus.CLAIMED_REVIEW, 0),
-				byStatus.getOrDefault(QuestionStatus.REJECTED, 0));
+				byStatus.getOrDefault(QuestionStatus.REJECTED, 0), themes.size(), civilisations.size(), media,
+				(int) userAnswerRepository.countAnswersToAuthorQuestions(userId));
 	}
 
 	private static String enumKey(Enum<?> value) {

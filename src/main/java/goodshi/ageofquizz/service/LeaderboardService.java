@@ -20,10 +20,12 @@ import goodshi.ageofquizz.dto.DailyRiddleStatsDTO;
 import goodshi.ageofquizz.dto.LeaderboardDTO;
 import goodshi.ageofquizz.dto.LeaderboardDTO.Entry;
 import goodshi.ageofquizz.entity.GamePlayerResultEntity;
+import goodshi.ageofquizz.entity.Question.QuestionStatus;
 import goodshi.ageofquizz.entity.User;
 import goodshi.ageofquizz.repository.AnswerRepository;
 import goodshi.ageofquizz.repository.DailyRiddleResultRepository;
 import goodshi.ageofquizz.repository.GamePlayerResultRepository;
+import goodshi.ageofquizz.repository.QuestionRepository;
 import goodshi.ageofquizz.repository.UserAnswerRepository;
 import goodshi.ageofquizz.repository.UserRepository;
 import goodshi.ageofquizz.service.AnswerAttempts.AnswerRow;
@@ -60,6 +62,9 @@ public class LeaderboardService {
 	@Autowired
 	private DailyRiddleService dailyRiddleService;
 
+	@Autowired
+	private QuestionRepository questionRepository;
+
 	private volatile LeaderboardDTO cached;
 
 	@Transactional(readOnly = true)
@@ -87,16 +92,17 @@ public class LeaderboardService {
 
 		List<Score> wins = computeWins();
 		List<Score> streaks = computeDailyStreaks();
+		List<Score> authors = computeAuthors();
 
 		List<Long> userIds = new ArrayList<>();
-		for (List<Score> scores : List.of(accuracy, questions, wins, streaks)) {
+		for (List<Score> scores : List.of(accuracy, questions, wins, streaks, authors)) {
 			scores.forEach(s -> userIds.add(s.userId()));
 		}
 		Map<Long, User> users = new HashMap<>();
 		userRepository.findAllById(userIds).forEach(u -> users.put(u.getId(), u));
 
 		return new LeaderboardDTO(toEntries(accuracy, users), toEntries(questions, users), toEntries(wins, users),
-				toEntries(streaks, users), MIN_QUESTIONS_FOR_ACCURACY, Instant.now());
+				toEntries(streaks, users), toEntries(authors, users), MIN_QUESTIONS_FOR_ACCURACY, Instant.now());
 	}
 
 	private void computeAnswerScores(List<Score> accuracy, List<Score> questions) {
@@ -146,6 +152,23 @@ public class LeaderboardService {
 				scores.add(new Score(userId, counts[0], counts[1]));
 			}
 		});
+		return scores;
+	}
+
+	/** Questions créées par auteur (tous statuts), départagées par les validées. */
+	private List<Score> computeAuthors() {
+		List<Score> scores = new ArrayList<>();
+		for (Object[] row : questionRepository.countByAuthorWithStatus(QuestionStatus.VALIDATED)) {
+			Long userId = (Long) row[0];
+			if (userId == null || userId == ANONYMOUS_USER_ID) {
+				continue;
+			}
+			long created = ((Number) row[1]).longValue();
+			int validated = row[2] == null ? 0 : ((Number) row[2]).intValue();
+			if (created > 0) {
+				scores.add(new Score(userId, created, validated));
+			}
+		}
 		return scores;
 	}
 

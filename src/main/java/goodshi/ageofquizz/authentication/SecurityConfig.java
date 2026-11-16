@@ -65,7 +65,7 @@ public class SecurityConfig {
 						// qui exige d'être connecté : le client reçoit un 403 au lieu de la vraie erreur
 						.requestMatchers("/error").permitAll()
 						// Profils publics : visibles sans être connecté
-						.requestMatchers(HttpMethod.GET, "/users/profile/**", "/leaderboard").permitAll()
+						.requestMatchers(HttpMethod.GET, "/users/profile/**", "/leaderboard", "/questions/authors").permitAll()
 						.requestMatchers("/login", "/register", "/ws/**", "/users/forgot-password",
 								"/users/verify-email", "/users/reset-password", "/questions/quizz",
 								"questions/submit-answers", "/multiplayer/**", "/daily-riddle", "/daily-riddle/guess")

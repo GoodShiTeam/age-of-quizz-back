@@ -11,6 +11,8 @@ public class FilterQuestionDTO {
 	private QuestionBuilding building;
 	private QuestionCivilisation civilisation;
 	private QuestionTheme theme;
+	/** Pseudo de l'auteur des questions ; null = tous les auteurs. */
+	private String authorUsername;
 	/** Thèmes à écarter, y compris des questions aléatoires de complément. */
 	private List<QuestionTheme> excludedThemes;
 	private int numberOfQuestions;
@@ -37,6 +39,14 @@ public class FilterQuestionDTO {
 
 	public void setTheme(QuestionTheme theme) {
 		this.theme = theme;
+	}
+
+	public String getAuthorUsername() {
+		return authorUsername;
+	}
+
+	public void setAuthorUsername(String authorUsername) {
+		this.authorUsername = authorUsername;
 	}
 
 	public List<QuestionTheme> getExcludedThemes() {

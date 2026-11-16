@@ -9,12 +9,12 @@ import java.util.List;
  * précision.
  */
 public record LeaderboardDTO(List<Entry> accuracy, List<Entry> questionsAnswered, List<Entry> multiplayerWins,
-		List<Entry> dailyRiddleStreak, int minQuestionsForAccuracy, Instant computedAt) {
+		List<Entry> dailyRiddleStreak, List<Entry> questionsCreated, int minQuestionsForAccuracy, Instant computedAt) {
 
 	/**
 	 * {@code value} = valeur classée (précision en %, nombre...) ;
 	 * {@code sampleSize} = base du calcul (questions répondues, parties jouées,
-	 * énigmes jouées).
+	 * énigmes jouées, questions validées).
 	 */
 	public record Entry(int rank, Long userProfileId, String pseudo, String avatar, double value, int sampleSize) {
 	}

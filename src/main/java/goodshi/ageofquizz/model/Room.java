@@ -148,6 +148,18 @@ public class Room {
 		scores.put(key, 0);
 	}
 
+	/** Retire un participant de la salle (lobby). */
+	public void removePlayer(String participantKey) {
+		User user = participantsByKey.remove(participantKey);
+		if (user != null) {
+			// comparaison par identité : les invités partagent tous l'id -1
+			players.removeIf(p -> p == user);
+		}
+		scores.remove(participantKey);
+		readyParticipantIds.remove(participantKey);
+		answeredParticipantIds.remove(participantKey);
+	}
+
 	public boolean hasParticipantAnswered(String participantKey) {
 		return answeredParticipantIds.contains(participantKey);
 	}

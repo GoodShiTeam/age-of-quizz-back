@@ -24,6 +24,13 @@ public interface UserAnswerRepository extends JpaRepository<UserAnswer, Integer>
 			""")
 	List<UserAnswer> findAllWithQuestionByUserId(@Param("userId") Long userId);
 
+	/** Réponses données par les autres joueurs aux questions d'un auteur. */
+	@Query("""
+			    SELECT COUNT(ua) FROM UserAnswer ua
+			    WHERE ua.question.author.id = :authorId AND ua.user.id <> :authorId
+			""")
+	long countAnswersToAuthorQuestions(@Param("authorId") Long authorId);
+
 	/**
 	 * Toutes les réponses de tous les joueurs, pour le classement :
 	 * [userId, questionId, answerId, answeredAt, responseTimeSeconds].

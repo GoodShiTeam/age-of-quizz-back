@@ -27,6 +27,11 @@ public class QuestionSpecification {
 		return (root, query, cb) -> building == null ? cb.conjunction() : cb.equal(root.get("building"), building);
 	}
 
+	public static Specification<Question> hasAuthor(String authorUsername) {
+		return (root, query, cb) -> authorUsername == null || authorUsername.isBlank() ? cb.conjunction()
+				: cb.equal(root.join("author").get("username"), authorUsername);
+	}
+
 	public static Specification<Question> isStatus(Question.QuestionStatus status) {
 		return (root, query, cb) -> status == null ? cb.conjunction() : cb.equal(root.get("status"), status);
 	}
