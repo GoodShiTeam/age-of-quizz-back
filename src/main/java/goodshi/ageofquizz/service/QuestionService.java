@@ -78,10 +78,11 @@ public class QuestionService {
 		Question question = questionRepository.findById(request.getId()).orElseThrow(
 				() -> new ResourceNotFoundException("Question with id : " + request.getId() + " doesn't exist"));
 
-		// Un auteur ne modifie que ses propres questions, un admin toutes.
-		boolean isAdmin = author.getRoles().stream().anyMatch(role -> role.getName() == RoleEnum.ADMIN);
+		// Un auteur ne modifie que ses propres questions, un relecteur ou un admin toutes.
+		boolean isAdminOrReviewer = author.getRoles().stream()
+				.anyMatch(role -> role.getName() == RoleEnum.ADMIN || role.getName() == RoleEnum.REVIEWER);
 		boolean isOwner = question.getAuthor() != null && Objects.equals(question.getAuthor().getId(), author.getId());
-		if (!isAdmin && !isOwner) {
+		if (!isAdminOrReviewer && !isOwner) {
 			throw new AccessDeniedException("Vous ne pouvez modifier que vos propres questions");
 		}
 

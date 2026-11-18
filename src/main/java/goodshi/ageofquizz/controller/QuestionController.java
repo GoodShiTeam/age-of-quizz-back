@@ -51,7 +51,7 @@ public class QuestionController {
 	}
 
 	@PutMapping
-	@PreAuthorize("hasAnyRole('AUTHOR', 'ADMIN')")
+	@PreAuthorize("hasAnyRole('AUTHOR', 'REVIEWER', 'ADMIN')")
 	public ResponseEntity<QuestionDTO> updateQuestion(@Valid @RequestBody QuestionCreateRequestDTO request) {
 		var user = authenticationFacade.getAuthenticatedUser();
 		if (user == null) {
