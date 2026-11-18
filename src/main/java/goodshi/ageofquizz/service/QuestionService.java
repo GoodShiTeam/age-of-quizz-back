@@ -48,6 +48,9 @@ public class QuestionService {
 	@Autowired
 	private QuestionReviewRepository questionReviewRepository;
 
+	@Autowired
+	private QuestionReportService questionReportService;
+
 	@Transactional
 	public Question createQuestion(QuestionCreateRequestDTO request, User author) {
 
@@ -93,6 +96,11 @@ public class QuestionService {
 		question.setStatus(status);
 		Question saved = questionRepository.save(question);
 
+		// Approuver ou rejeter vaut traitement des signalements (ex. après correction par l'auteur).
+		if (status == QuestionStatus.VALIDATED || status == QuestionStatus.REJECTED) {
+			questionReportService.resolveAll(saved.getId(), reviewer);
+		}
+
 		// Pas de notification si le statut ne change pas (double clic, rejeu).
 		if (previous != status && (status == QuestionStatus.VALIDATED || status == QuestionStatus.REJECTED)) {
 			notificationService.notifyAuthor(saved, reviewer, status == QuestionStatus.VALIDATED
@@ -128,6 +136,10 @@ public class QuestionService {
 		updatedQuestion.setStatus(QuestionStatus.CREATED_REVIEW);
 
 		Question saved = questionRepository.save(updatedQuestion);
+		// Un relecteur qui corrige la question traite du même coup ses signalements.
+		if (isAdminOrReviewer) {
+			questionReportService.resolveAll(saved.getId(), author);
+		}
 		if (isOwner) {
 			// L'auteur a corrigé sa question : elle repart en relecture.
 			notificationService.notifyReviewers(saved, author, true);
