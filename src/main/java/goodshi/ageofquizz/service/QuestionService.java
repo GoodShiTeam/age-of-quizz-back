@@ -24,12 +24,14 @@ import goodshi.ageofquizz.dto.QuestionDTO;
 import goodshi.ageofquizz.entity.Answer;
 import goodshi.ageofquizz.entity.Notification;
 import goodshi.ageofquizz.entity.Question;
+import goodshi.ageofquizz.entity.QuestionReview;
 import goodshi.ageofquizz.entity.Question.QuestionStatus;
 import goodshi.ageofquizz.entity.Question.QuestionTheme;
 import goodshi.ageofquizz.entity.User;
 import goodshi.ageofquizz.enums.RoleEnum;
 import goodshi.ageofquizz.exception.ResourceNotFoundException;
 import goodshi.ageofquizz.repository.QuestionRepository;
+import goodshi.ageofquizz.repository.QuestionReviewRepository;
 import goodshi.ageofquizz.util.QuestionSpecification;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -42,6 +44,9 @@ public class QuestionService {
 
 	@Autowired
 	private NotificationService notificationService;
+
+	@Autowired
+	private QuestionReviewRepository questionReviewRepository;
 
 	@Transactional
 	public Question createQuestion(QuestionCreateRequestDTO request, User author) {
@@ -75,6 +80,15 @@ public class QuestionService {
 	public Question updateStatusQuestion(Integer id, QuestionStatus status, User reviewer) {
 		Question question = questionRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Question id : " + id + " doesn't exist"));
+
+		// Un relecteur ne tranche pas sur ses propres questions (il peut les modifier) ; l'admin si.
+		boolean isAdmin = reviewer.getRoles().stream().anyMatch(role -> role.getName() == RoleEnum.ADMIN);
+		boolean isOwner = question.getAuthor() != null
+				&& Objects.equals(question.getAuthor().getId(), reviewer.getId());
+		if (isOwner && !isAdmin) {
+			throw new AccessDeniedException("Vous ne pouvez pas valider ou rejeter vos propres questions");
+		}
+
 		QuestionStatus previous = question.getStatus();
 		question.setStatus(status);
 		Question saved = questionRepository.save(question);
@@ -85,6 +99,9 @@ public class QuestionService {
 					? Notification.Type.QUESTION_VALIDATED
 					: Notification.Type.QUESTION_REJECTED);
 			notificationService.clearReviewRequests(saved);
+			questionReviewRepository.save(new QuestionReview(reviewer, saved,
+					status == QuestionStatus.VALIDATED ? QuestionReview.Action.VALIDATED
+							: QuestionReview.Action.REJECTED));
 		}
 		return saved;
 	}
@@ -116,6 +133,8 @@ public class QuestionService {
 			notificationService.notifyReviewers(saved, author, true);
 		} else {
 			notificationService.notifyAuthor(saved, author, Notification.Type.QUESTION_MODIFIED);
+			// Correction de la question d'un autre : action de relecture.
+			questionReviewRepository.save(new QuestionReview(author, saved, QuestionReview.Action.MODIFIED));
 		}
 		return saved;
 	}

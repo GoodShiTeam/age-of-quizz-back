@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -26,6 +27,7 @@ import goodshi.ageofquizz.dto.UserStatsDTO.CategoryStat;
 import goodshi.ageofquizz.dto.UserStatsDTO.MultiplayerStats;
 import goodshi.ageofquizz.dto.UserStatsDTO.Overview;
 import goodshi.ageofquizz.dto.UserStatsDTO.RecentGame;
+import goodshi.ageofquizz.dto.UserStatsDTO.ReviewerStats;
 import goodshi.ageofquizz.dto.UserStatsDTO.WeeklyProgress;
 import goodshi.ageofquizz.entity.GamePlayerResultEntity;
 import goodshi.ageofquizz.entity.GameSessionEntity;
@@ -34,6 +36,7 @@ import goodshi.ageofquizz.entity.Question.QuestionCivilisation;
 import goodshi.ageofquizz.entity.Question.QuestionStatus;
 import goodshi.ageofquizz.entity.Question.QuestionTheme;
 import goodshi.ageofquizz.entity.Question.QuestionType;
+import goodshi.ageofquizz.entity.QuestionReview;
 import goodshi.ageofquizz.entity.User;
 import goodshi.ageofquizz.entity.UserAnswer;
 import goodshi.ageofquizz.exception.ResourceNotFoundException;
@@ -41,6 +44,7 @@ import goodshi.ageofquizz.repository.AnswerRepository;
 import goodshi.ageofquizz.repository.GamePlayerResultRepository;
 import goodshi.ageofquizz.repository.GameSessionRepository;
 import goodshi.ageofquizz.repository.QuestionRepository;
+import goodshi.ageofquizz.repository.QuestionReviewRepository;
 import goodshi.ageofquizz.repository.UserAnswerRepository;
 import goodshi.ageofquizz.repository.UserRepository;
 import goodshi.ageofquizz.service.AnswerAttempts.AnswerRow;
@@ -73,6 +77,9 @@ public class UserStatsService {
 	@Autowired
 	private DailyRiddleService dailyRiddleService;
 
+	@Autowired
+	private QuestionReviewRepository questionReviewRepository;
+
 	@Transactional(readOnly = true)
 	public UserStatsDTO getStatsByProfileId(Long userProfileId) {
 		User user = userRepository.findByUserProfileId(userProfileId)
@@ -97,7 +104,23 @@ public class UserStatsService {
 				buildCategoryStats(attempts, questions,
 						q -> q.getCivilisation() == QuestionCivilisation.NONE ? null : enumKey(q.getCivilisation())),
 				buildProgress(attempts), buildMultiplayerStats(user.getId()),
-				dailyRiddle.played() > 0 ? dailyRiddle : null, buildAuthorStats(user.getId()));
+				dailyRiddle.played() > 0 ? dailyRiddle : null, buildAuthorStats(user.getId()),
+				buildReviewerStats(user.getId()));
+	}
+
+	private ReviewerStats buildReviewerStats(Long userId) {
+		Map<QuestionReview.Action, Integer> byAction = new EnumMap<>(QuestionReview.Action.class);
+		for (Object[] row : questionReviewRepository.countByReviewerGroupByAction(userId)) {
+			byAction.put((QuestionReview.Action) row[0], ((Long) row[1]).intValue());
+		}
+		if (byAction.isEmpty()) {
+			return null;
+		}
+		int validated = byAction.getOrDefault(QuestionReview.Action.VALIDATED, 0);
+		int rejected = byAction.getOrDefault(QuestionReview.Action.REJECTED, 0);
+		return new ReviewerStats(validated + rejected, validated, rejected,
+				byAction.getOrDefault(QuestionReview.Action.MODIFIED, 0),
+				(int) questionReviewRepository.countDistinctAuthorsReviewed(userId));
 	}
 
 	private Overview buildOverview(List<Attempt> attempts) {

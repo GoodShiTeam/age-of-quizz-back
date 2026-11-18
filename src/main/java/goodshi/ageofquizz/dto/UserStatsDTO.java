@@ -6,12 +6,21 @@ import java.util.List;
 
 /**
  * Statistiques publiques d'un joueur, affichées sur sa page profil.
- * {@code dailyRiddle} et {@code author} sont null quand le joueur n'a jamais
- * joué à l'énigme du jour / créé de question.
+ * {@code dailyRiddle}, {@code author} et {@code reviewer} sont null quand le
+ * joueur n'a jamais joué à l'énigme du jour / créé de question / relu de
+ * question.
  */
 public record UserStatsDTO(Overview overview, List<CategoryStat> byTheme, List<CategoryStat> byCivilisation,
 		List<WeeklyProgress> progress, MultiplayerStats multiplayer, DailyRiddleStatsDTO dailyRiddle,
-		AuthorStats author) {
+		AuthorStats author, ReviewerStats reviewer) {
+
+	/**
+	 * Actions de relecture : {@code decisions} = validations + rejets,
+	 * {@code modified} = questions d'autres auteurs corrigées,
+	 * {@code authorsHelped} = auteurs distincts (hors soi-même) relus.
+	 */
+	public record ReviewerStats(int decisions, int validated, int rejected, int modified, int authorsHelped) {
+	}
 
 	/** Toutes les questions répondues, solo et multijoueur confondus. */
 	public record Overview(int questionsAnswered, int correctAnswers, double averageResponseTimeSeconds) {
