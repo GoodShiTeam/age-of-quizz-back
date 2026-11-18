@@ -89,7 +89,11 @@ public class QuestionController {
 	@PreAuthorize("hasAnyRole('REVIEWER', 'ADMIN')")
 	public ResponseEntity<QuestionDTO> updateStatusQuestion(@PathVariable("id") Integer id,
 			@PathVariable("status") Question.QuestionStatus status) {
-		Question updated = questionService.updateStatusQuestion(id, status);
+		var user = authenticationFacade.getAuthenticatedUser();
+		if (user == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+		Question updated = questionService.updateStatusQuestion(id, status, user);
 		return ResponseEntity.ok(QuestionDTO.fromEntity(updated));
 	}
 

@@ -22,6 +22,7 @@ import goodshi.ageofquizz.dto.FilterQuestionDTO;
 import goodshi.ageofquizz.dto.QuestionCreateRequestDTO;
 import goodshi.ageofquizz.dto.QuestionDTO;
 import goodshi.ageofquizz.entity.Answer;
+import goodshi.ageofquizz.entity.Notification;
 import goodshi.ageofquizz.entity.Question;
 import goodshi.ageofquizz.entity.Question.QuestionStatus;
 import goodshi.ageofquizz.entity.Question.QuestionTheme;
@@ -39,14 +40,17 @@ public class QuestionService {
 	@Autowired
 	private QuestionRepository questionRepository;
 
+	@Autowired
+	private NotificationService notificationService;
+
 	@Transactional
 	public Question createQuestion(QuestionCreateRequestDTO request, User author) {
 
 		Question question = new Question(request.getTheme(), request.getLibelle(), request.getType(), author);
 
-		Question createdQuestion = buildQuestion(question, request, author);
-
-		return questionRepository.save(createdQuestion);
+		Question createdQuestion = questionRepository.save(buildQuestion(question, request, author));
+		notificationService.notifyReviewers(createdQuestion, author, false);
+		return createdQuestion;
 	}
 
 	private Question buildQuestion(Question question, QuestionCreateRequestDTO request, User author) {
@@ -67,13 +71,25 @@ public class QuestionService {
 		return questionRepository.findAllWithAnswersAndAuthor().stream().map(QuestionDTO::fromEntity).toList();
 	}
 
-	public Question updateStatusQuestion(Integer id, QuestionStatus status) {
-		return questionRepository.findById(id).map(question -> {
-			question.setStatus(status);
-			return questionRepository.save(question);
-		}).orElseThrow(() -> new RuntimeException("Question id : " + id + "doesn't exist"));
+	@Transactional
+	public Question updateStatusQuestion(Integer id, QuestionStatus status, User reviewer) {
+		Question question = questionRepository.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException("Question id : " + id + " doesn't exist"));
+		QuestionStatus previous = question.getStatus();
+		question.setStatus(status);
+		Question saved = questionRepository.save(question);
+
+		// Pas de notification si le statut ne change pas (double clic, rejeu).
+		if (previous != status && (status == QuestionStatus.VALIDATED || status == QuestionStatus.REJECTED)) {
+			notificationService.notifyAuthor(saved, reviewer, status == QuestionStatus.VALIDATED
+					? Notification.Type.QUESTION_VALIDATED
+					: Notification.Type.QUESTION_REJECTED);
+			notificationService.clearReviewRequests(saved);
+		}
+		return saved;
 	}
 
+	@Transactional
 	public Question updateQuestion(QuestionCreateRequestDTO request, User author) {
 		Question question = questionRepository.findById(request.getId()).orElseThrow(
 				() -> new ResourceNotFoundException("Question with id : " + request.getId() + " doesn't exist"));
@@ -94,7 +110,14 @@ public class QuestionService {
 		updatedQuestion.setType(request.getType());
 		updatedQuestion.setStatus(QuestionStatus.CREATED_REVIEW);
 
-		return questionRepository.save(updatedQuestion);
+		Question saved = questionRepository.save(updatedQuestion);
+		if (isOwner) {
+			// L'auteur a corrigé sa question : elle repart en relecture.
+			notificationService.notifyReviewers(saved, author, true);
+		} else {
+			notificationService.notifyAuthor(saved, author, Notification.Type.QUESTION_MODIFIED);
+		}
+		return saved;
 	}
 
 	public List<QuestionDTO> getQuestions(@Valid FilterQuestionDTO filter) {
