@@ -32,7 +32,9 @@ public class Notification {
 		/** Pour les relecteurs : nouvelle question à relire. */
 		QUESTION_TO_REVIEW,
 		/** Pour les relecteurs : question modifiée par son auteur, à relire de nouveau. */
-		QUESTION_RESUBMITTED
+		QUESTION_RESUBMITTED,
+		/** Pour les relecteurs et l'auteur : un joueur a signalé la question. */
+		QUESTION_REPORTED
 	}
 
 	@Id

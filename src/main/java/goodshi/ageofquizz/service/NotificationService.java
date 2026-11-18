@@ -1,7 +1,9 @@
 package goodshi.ageofquizz.service;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +64,30 @@ public class NotificationService {
 	/** La question a été tranchée : elle ne doit plus apparaître « à relire » chez les autres relecteurs. */
 	public void clearReviewRequests(Question question) {
 		notificationRepository.markReadForQuestion(question.getId(), REVIEW_TYPES, Instant.now());
+	}
+
+	/**
+	 * Question signalée par un joueur : relecteurs et auteur sont prévenus (une
+	 * seule notification si l'auteur est aussi relecteur), jamais le signaleur.
+	 */
+	public void notifyReported(Question question, User reporter) {
+		Map<Long, User> recipients = new LinkedHashMap<>();
+		userRepository.findByAnyRole(REVIEWER_ROLES).forEach(reviewer -> recipients.put(reviewer.getId(), reviewer));
+		if (question.getAuthor() != null) {
+			recipients.putIfAbsent(question.getAuthor().getId(), question.getAuthor());
+		}
+		List<Notification> notifications = recipients.values().stream()
+				.filter(recipient -> !isSameUser(recipient, reporter))
+				.map(recipient -> new Notification(recipient, question, Notification.Type.QUESTION_REPORTED,
+						displayName(reporter)))
+				.toList();
+		notificationRepository.saveAll(notifications);
+	}
+
+	/** Signalements traités : leurs notifications sont soldées pour tout le monde. */
+	public void clearReportNotifications(Integer questionId) {
+		notificationRepository.markReadForQuestion(questionId, List.of(Notification.Type.QUESTION_REPORTED),
+				Instant.now());
 	}
 
 	@Transactional
