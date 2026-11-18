@@ -30,12 +30,13 @@ public interface QuestionRepository extends JpaRepository<Question, Integer>, Jp
 	List<Question> findByIdsWithAnswers(@Param("ids") List<Integer> ids);
 
 	/**
-	 * Toutes les questions avec réponses et auteur en une requête (au lieu d'une
-	 * requête par question pour charger ses réponses).
+	 * Toutes les questions avec leur auteur. Les réponses ne sont pas jointes ici :
+	 * un JOIN FETCH dupliquerait libelle/explication (TEXT) sur chaque ligne de
+	 * réponse. Elles sont chargées par lots via hibernate.default_batch_fetch_size
+	 * (quelques requêtes IN au lieu d'une par question).
 	 */
 	@Query("""
-			    SELECT DISTINCT q FROM Question q
-			    LEFT JOIN FETCH q.answers
+			    SELECT q FROM Question q
 			    LEFT JOIN FETCH q.author
 			""")
 	List<Question> findAllWithAnswersAndAuthor();
