@@ -40,4 +40,16 @@ public interface UserAnswerRepository extends JpaRepository<UserAnswer, Integer>
 			    FROM UserAnswer ua
 			""")
 	List<Object[]> findAllAnswerRows();
+
+	/**
+	 * Questions de quiz (solo et multi) distinctes jouées sur [from, to[, pour
+	 * les jokers de l'avent. DISTINCT car une question à plusieurs réponses
+	 * cochées donne plusieurs lignes ; une question rejouée ne compte qu'une fois.
+	 */
+	@Query("""
+			    SELECT COUNT(DISTINCT ua.question.id) FROM UserAnswer ua
+			    WHERE ua.user.id = :userId AND ua.answeredAt >= :from AND ua.answeredAt < :to
+			""")
+	long countByUserBetween(@Param("userId") Long userId, @Param("from") java.time.LocalDateTime from,
+			@Param("to") java.time.LocalDateTime to);
 }

@@ -41,6 +41,10 @@ public interface QuestionRepository extends JpaRepository<Question, Integer>, Jp
 			""")
 	List<Question> findAllWithAnswersAndAuthor();
 
+	/** Ids des questions dans ce statut, triés (tirage stable du calendrier de l'avent). */
+	@Query("SELECT q.id FROM Question q WHERE q.status = :status ORDER BY q.id")
+	List<Integer> findIdsByStatus(@Param("status") QuestionStatus status);
+
 	/** Pseudos distincts des auteurs ayant des questions dans ce statut. */
 	@Query("""
 			    SELECT DISTINCT q.author.username FROM Question q

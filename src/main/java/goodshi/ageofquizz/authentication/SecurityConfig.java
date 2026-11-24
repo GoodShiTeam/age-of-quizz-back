@@ -66,6 +66,8 @@ public class SecurityConfig {
 						.requestMatchers("/error").permitAll()
 						// Profils publics : visibles sans être connecté
 						.requestMatchers(HttpMethod.GET, "/users/profile/**", "/leaderboard", "/questions/authors").permitAll()
+						// Calendrier de l'avent : grille et classement visibles sans être connecté
+						.requestMatchers(HttpMethod.GET, "/events/advent", "/events/advent/leaderboard").permitAll()
 						.requestMatchers("/login", "/register", "/ws/**", "/users/forgot-password",
 								"/users/verify-email", "/users/reset-password", "/questions/quizz",
 								"questions/submit-answers", "/multiplayer/**", "/daily-riddle", "/daily-riddle/guess")
