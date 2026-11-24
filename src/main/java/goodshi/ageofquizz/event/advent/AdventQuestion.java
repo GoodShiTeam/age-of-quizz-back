@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
  * (src/features/advent/formats).
  *
  * @param mediaUrl        image facultative : URL absolue, ou chemin servi par
- *                        le front (ex. /advent/jour-3.png dans public/)
+ *                        le front (ex. /images/advent/jour-3.png dans public/)
  * @param choices         propositions affichées (formats à choix / à
  *                        classer, colonne de gauche à relier), sinon vide
  * @param choiceImages    image de chaque proposition (même ordre que

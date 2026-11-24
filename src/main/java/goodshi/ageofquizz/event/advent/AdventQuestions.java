@@ -26,16 +26,16 @@ public final class AdventQuestions {
 
 	public static final int DAYS = 24;
 
-	// Images : public/advent/ côté front.
+	// Images : public/images/advent/ côté front (pas public/advent : conflit avec la route /advent).
 	private static final List<AdventQuestion> ALL = List.of(
 
 			// Éléments écrits dans le bon ordre (du plus ancien au plus récent).
 			AdventQuestion.order(1, "Classe ces DLC par ordre de sortie, du plus ancien au plus récent.", List.of(
-					Item.of("Return of Rome", "/advent/dlc-return-of-rome.png"),
-					Item.of("The Mountain Royals", "/advent/dlc-mountain-royals.png"),
-					Item.of("The Three Kingdoms", "/advent/dlc-three-kingdoms.png"),
-					Item.of("The Last Chieftains", "/advent/dlc-last-chieftains.png"),
-					Item.of("The Viking Sagas", "/advent/dlc-viking-sagas.png")),
+					Item.of("Return of Rome", "/images/advent/dlc-return-of-rome.png"),
+					Item.of("The Mountain Royals", "/images/advent/dlc-mountain-royals.png"),
+					Item.of("The Three Kingdoms", "/images/advent/dlc-three-kingdoms.png"),
+					Item.of("The Last Chieftains", "/images/advent/dlc-last-chieftains.png"),
+					Item.of("The Viking Sagas", "/images/advent/dlc-viking-sagas.png")),
 					"Return of Rome (16 mai 2023), The Mountain Royals (31 octobre 2023), The Three Kingdoms "
 							+ "(6 mai 2025), The Last Chieftains (17 février 2026) et The Viking Sagas "
 							+ "(22 septembre 2026)."),
@@ -45,15 +45,15 @@ public final class AdventQuestions {
 					List.of("Le samouraï", "Samouraï", "Samouraïs", "Les samouraïs", "Samurai", "Samurais",
 							"Le samurai", "Samouraï d'élite", "Samurai d'élite", "Elite samurai"),
 					"C'est le samouraï, l'unité unique des Japonais, redoutable contre les autres unités uniques.")
-					.withMedia("/advent/jour-02.png"),
+					.withMedia("/images/advent/jour-02.png"),
 
 			// Images des châteaux aux noms aléatoires : ils ne doivent pas trahir les paires.
 			AdventQuestion.match(3, "Relie chaque château à sa civilisation.", List.of(
-					Pair.of("/advent/jour-03-e7ca5a.png", "Francs", "/advent/jour-03-blason-francs.png"),
-					Pair.of("/advent/jour-03-5c3a07.png", "Vietnamiens", "/advent/jour-03-blason-vietnamiens.png"),
-					Pair.of("/advent/jour-03-3ac643.png", "Byzantins", "/advent/jour-03-blason-byzantins.png"),
-					Pair.of("/advent/jour-03-8329d5.png", "Mongols", "/advent/jour-03-blason-mongols.png"),
-					Pair.of("/advent/jour-03-53c42d.png", "Hindoustanis", "/advent/jour-03-blason-hindoustanis.png")),
+					Pair.of("/images/advent/jour-03-e7ca5a.png", "Francs", "/images/advent/jour-03-blason-francs.png"),
+					Pair.of("/images/advent/jour-03-5c3a07.png", "Vietnamiens", "/images/advent/jour-03-blason-vietnamiens.png"),
+					Pair.of("/images/advent/jour-03-3ac643.png", "Byzantins", "/images/advent/jour-03-blason-byzantins.png"),
+					Pair.of("/images/advent/jour-03-8329d5.png", "Mongols", "/images/advent/jour-03-blason-mongols.png"),
+					Pair.of("/images/advent/jour-03-53c42d.png", "Hindoustanis", "/images/advent/jour-03-blason-hindoustanis.png")),
 					"Chaque civilisation a son style de château : tours coniques pour les Francs, coupoles pour "
 							+ "les Byzantins, pagodes pour les Mongols..."),
 
@@ -64,10 +64,10 @@ public final class AdventQuestions {
 
 			// Images des cartes aux noms aléatoires : ils ne doivent pas trahir les paires.
 			AdventQuestion.match(5, "Spécial Désert : relie chaque carte à son nom.", List.of(
-					Pair.of("/advent/jour-05-b7bfee.png", "Arabie"),
-					Pair.of("/advent/jour-05-68acd5.png", "Haboob"),
-					Pair.of("/advent/jour-05-723789.png", "Atacama"),
-					Pair.of("/advent/jour-05-7dd58a.png", "Ruée vers l'or (Gold Rush)")),
+					Pair.of("/images/advent/jour-05-b7bfee.png", "Arabie"),
+					Pair.of("/images/advent/jour-05-68acd5.png", "Haboob"),
+					Pair.of("/images/advent/jour-05-723789.png", "Atacama"),
+					Pair.of("/images/advent/jour-05-7dd58a.png", "Ruée vers l'or (Gold Rush)")),
 					null),
 
 			// Question tirée parmi celles du quiz que le joueur a ratées avant le jour de la case.
@@ -79,30 +79,30 @@ public final class AdventQuestions {
 
 			// Photos aux noms aléatoires : ils ne doivent pas trahir les paires.
 			AdventQuestion.match(7, "Guess the Star : relie chaque photo au pseudo du joueur.", List.of(
-					Pair.of("/advent/jour-07-f08b1b.png", "Viper"),
-					Pair.of("/advent/jour-07-f10db6.png", "Hera"),
-					Pair.of("/advent/jour-07-857820.png", "Lewis"),
-					Pair.of("/advent/jour-07-da40e9.png", "MbL"),
-					Pair.of("/advent/jour-07-658d73.png", "Sitaux")),
+					Pair.of("/images/advent/jour-07-f08b1b.png", "Viper"),
+					Pair.of("/images/advent/jour-07-f10db6.png", "Hera"),
+					Pair.of("/images/advent/jour-07-857820.png", "Lewis"),
+					Pair.of("/images/advent/jour-07-da40e9.png", "MbL"),
+					Pair.of("/images/advent/jour-07-658d73.png", "Sitaux")),
 					null),
 
 			// Images des cartes aux noms aléatoires : ils ne doivent pas trahir les paires.
 			AdventQuestion.match(8, "Guess the Map, spécial Hybrid : relie chaque carte à son nom.", List.of(
-					Pair.of("/advent/jour-08-79f9ff.png", "Baltic"),
-					Pair.of("/advent/jour-08-fb3826.png", "Mediterranean"),
-					Pair.of("/advent/jour-08-ca2ad5.png", "Crater Lake"),
-					Pair.of("/advent/jour-08-67b0d0.png", "Archipelago"),
-					Pair.of("/advent/jour-08-4ef0ae.png", "Team Islands")),
+					Pair.of("/images/advent/jour-08-79f9ff.png", "Baltic"),
+					Pair.of("/images/advent/jour-08-fb3826.png", "Mediterranean"),
+					Pair.of("/images/advent/jour-08-ca2ad5.png", "Crater Lake"),
+					Pair.of("/images/advent/jour-08-67b0d0.png", "Archipelago"),
+					Pair.of("/images/advent/jour-08-4ef0ae.png", "Team Islands")),
 					null),
 
 			// Éléments écrits dans le bon ordre (du moins cher au plus cher en nourriture).
 			AdventQuestion.order(9, "Classe ces unités par coût en nourriture croissant.", List.of(
-					Item.of("Archer", "/advent/jour-09-archer.png"),
-					Item.of("Tirailleur", "/advent/jour-09-tirailleur.png"),
-					Item.of("Lancier", "/advent/jour-09-lancier.png"),
-					Item.of("Villageois", "/advent/jour-09-villageois.png"),
-					Item.of("Milicien", "/advent/jour-09-milicien.png"),
-					Item.of("Cavalerie d'éclairage", "/advent/jour-09-cavalerie-eclairage.png")),
+					Item.of("Archer", "/images/advent/jour-09-archer.png"),
+					Item.of("Tirailleur", "/images/advent/jour-09-tirailleur.png"),
+					Item.of("Lancier", "/images/advent/jour-09-lancier.png"),
+					Item.of("Villageois", "/images/advent/jour-09-villageois.png"),
+					Item.of("Milicien", "/images/advent/jour-09-milicien.png"),
+					Item.of("Cavalerie d'éclairage", "/images/advent/jour-09-cavalerie-eclairage.png")),
 					"Archer : 0 (25 bois, 45 or) · Tirailleur : 25 · Lancier : 35 · Villageois : 50 · "
 							+ "Milicien : 60 · Cavalerie d'éclairage : 80 nourriture."),
 
@@ -153,11 +153,11 @@ public final class AdventQuestions {
 
 			// Images des cartes aux noms aléatoires : ils ne doivent pas trahir les paires.
 			AdventQuestion.match(14, "Guess the Map, spécial maps fermées : relie chaque carte à son nom.",
-					List.of(Pair.of("/advent/jour-14-39eee9.png", "Arène"),
-							Pair.of("/advent/jour-14-94ad40.png", "Clairière fortifiée (Fortified Clearing)"),
-							Pair.of("/advent/jour-14-585107.png", "Forteresse"),
-							Pair.of("/advent/jour-14-398310.png", "Refuge (Hideout)"),
-							Pair.of("/advent/jour-14-8b65fc.png", "Michi")),
+					List.of(Pair.of("/images/advent/jour-14-39eee9.png", "Arène"),
+							Pair.of("/images/advent/jour-14-94ad40.png", "Clairière fortifiée (Fortified Clearing)"),
+							Pair.of("/images/advent/jour-14-585107.png", "Forteresse"),
+							Pair.of("/images/advent/jour-14-398310.png", "Refuge (Hideout)"),
+							Pair.of("/images/advent/jour-14-8b65fc.png", "Michi")),
 					null),
 
 			AdventQuestion.matchNames(15, "Relie chaque numéro de taunt à sa phrase.", List.of(
@@ -186,28 +186,28 @@ public final class AdventQuestions {
 			// Captcha : cases numérotées de 1 à 24, de gauche à droite puis de haut en bas.
 			// Obligatoires : béliers, onagre, tours de siège, trébuchet ; au choix : engins à peine
 			// visibles (12 : sommet d'une tour de siège, 23 : bord d'un bélier).
-			AdventQuestion.grid(17, "des unités de siège", "/advent/jour-17-4f13a5.jpg", 6, 4,
+			AdventQuestion.grid(17, "des unités de siège", "/images/advent/jour-17-4f13a5.jpg", 6, 4,
 					List.of(17, 18, 20, 21, 22, 24), List.of(12, 23),
 					"Béliers, onagre, tours de siège et trébuchet : il y en avait dans les cases 17, 18, 20, "
 							+ "21, 22 et 24."),
 
 			// Portraits nommés (noms de fichiers neutres).
 			AdventQuestion.match(18, "Relie chaque héros de campagne à sa civilisation.", List.of(
-					Pair.named("Barberousse", "/advent/jour-18-9f7fbd.png", "Teutons"),
-					Pair.named("Sundjata", "/advent/jour-18-84a35f.png", "Maliens"),
-					Pair.named("Itzcoatl", "/advent/jour-18-676ead.png", "Aztèques"),
-					Pair.named("Tamerlan", "/advent/jour-18-e144c9.png", "Tatars"),
-					Pair.named("Lê Lợi", "/advent/jour-18-5abfae.png", "Vietnamiens")),
+					Pair.named("Barberousse", "/images/advent/jour-18-9f7fbd.png", "Teutons"),
+					Pair.named("Sundjata", "/images/advent/jour-18-84a35f.png", "Maliens"),
+					Pair.named("Itzcoatl", "/images/advent/jour-18-676ead.png", "Aztèques"),
+					Pair.named("Tamerlan", "/images/advent/jour-18-e144c9.png", "Tatars"),
+					Pair.named("Lê Lợi", "/images/advent/jour-18-5abfae.png", "Vietnamiens")),
 					"Barberousse mène les Teutons, Sundjata les Maliens, Itzcoatl les Aztèques, Tamerlan les "
 							+ "Tatars et Lê Lợi les Vietnamiens."),
 
 			// Images des cartes aux noms aléatoires : ils ne doivent pas trahir les paires.
 			AdventQuestion.match(20, "Guess the Map, spécial Glace : relie chaque carte à son nom.", List.of(
-					Pair.of("/advent/jour-20-d8f84c.png", "Scandinavia"),
-					Pair.of("/advent/jour-20-ef4349.png", "Lac fantôme (Ghost Lake)"),
-					Pair.of("/advent/jour-20-422388.png", "Glaciers par équipe (Team Glaciers)"),
-					Pair.of("/advent/jour-20-bcdd14.png", "Groenland (Greenland)"),
-					Pair.of("/advent/jour-20-9d2432.png", "Colline du loup (Wolf Hill)")),
+					Pair.of("/images/advent/jour-20-d8f84c.png", "Scandinavia"),
+					Pair.of("/images/advent/jour-20-ef4349.png", "Lac fantôme (Ghost Lake)"),
+					Pair.of("/images/advent/jour-20-422388.png", "Glaciers par équipe (Team Glaciers)"),
+					Pair.of("/images/advent/jour-20-bcdd14.png", "Groenland (Greenland)"),
+					Pair.of("/images/advent/jour-20-9d2432.png", "Colline du loup (Wolf Hill)")),
 					null),
 
 			// ±20 %, réussie avec au moins 8 valeurs justes sur 10. Valeurs de base, sans UP ni bonus.
@@ -228,9 +228,9 @@ public final class AdventQuestions {
 			// Une image par essai, de la plus zoomée à l'icône entière ; noms neutres.
 			AdventQuestion.zoom(19, "Zoom extrême : quelle unité se cache derrière cette image ? "
 					+ "Tu as 3 essais, l'image se dézoome à chaque erreur.", List.of(
-							"/advent/jour-19-173f61.png",
-							"/advent/jour-19-d36681.png",
-							"/advent/jour-19-8b08fc.png"),
+							"/images/advent/jour-19-173f61.png",
+							"/images/advent/jour-19-d36681.png",
+							"/images/advent/jour-19-8b08fc.png"),
 					List.of("Le guerrier à shotel", "Guerrier à shotel", "Guerriers à shotel",
 							"Les guerriers à shotel", "Guerrier shotel", "Guerriers shotel", "Shotel",
 							"Guerrier a shotel", "Shotel warrior", "Shotel warriors",
